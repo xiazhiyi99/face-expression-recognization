@@ -24,21 +24,25 @@ def iou(now, prev):
     return cross / union
 
 
-def smooth(res, prev_res, alpha=0.1):
-    for now in res:
-        for prev in prev_res:
-            if iou(now, prev)>0.5:
-                now["vector"] = alpha * now["vector"] + (1 - alpha) * prev["vector"]
-                now["probability"], now["result"] = torch.max(now["vector"], 0)
-                now["probability"] = now["probability"] / now["vector"].sum()
-                break
-
-
 def get_trained_model(model, param_path, map_location="cpu"):
     ckpt = torch.load(param_path, map_location=map_location)
     model.load_state_dict(ckpt["state_dict"])
     model.eval()
     return model
+
+
+class LinearExponentialSmoothing:
+    def __init__(self, rate=0.1):
+        self.rate = rate
+
+    def smooth(self, res, prev_res):
+        for now in res:
+            for prev in prev_res:
+                if iou(now, prev) > 0.5:
+                    now["vector"] = alpha * now["vector"] + (1 - alpha) * prev["vector"]
+                    now["probability"], now["result"] = torch.max(now["vector"], 0)
+                    now["probability"] = now["probability"] / now["vector"].sum()
+                    break
 
 
 class FaceDetector:
@@ -57,7 +61,7 @@ class FaceDetector:
         return frame
 
 class ExpressionClassifier:
-    def __init__(self, classifier, express_table, smooth_rate=1):
+    def __init__(self, classifier, express_table, smoother=None):
         self.classifier = classifier
         self.resizer = trans.Compose([
             trans.Resize((224)),
@@ -68,7 +72,7 @@ class ExpressionClassifier:
         self.output_range = express_table.keys()
         self.express_table = [v for k,v in express_table.items()]
         self.prev_exp = []
-        self.smooth_rate = smooth_rate
+        self.smoother = smoother
 
     def detect(self, frame, boxes):
         exp = []
@@ -85,7 +89,8 @@ class ExpressionClassifier:
             prob, res = torch.max(pred, 0)
             exp.append({"result":res, "probability":prob, "vector":pred, "box":box})
 
-        smooth(exp, self.prev_exp, self.smooth_rate)
+        if self.smoother:
+            self.smoother.smooth(exp, self.prev_exp, self.smooth_rate)
         self.prev_exp = exp
         return exp
 
@@ -220,7 +225,7 @@ class Visualizer:
 if __name__=="__main__":
     detector = FaceDetector()
     mbn = get_trained_model(mbnet.MobileNetV3_Small(), "ckpt/affectnet_mobilenetv3_small_acc83.pth.tar")
-    classifier = ExpressionClassifier(mbn, affectnet_table, 0.3)
+    classifier = ExpressionClassifier(mbn, affectnet_table)
 
     cam_solver = CameraSolver(detector, classifier)
     cam_solver.start(0)
