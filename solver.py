@@ -32,14 +32,14 @@ def get_trained_model(model, param_path, map_location="cpu"):
 
 
 class LinearExponentialSmoothing:
-    def __init__(self, rate=0.1):
+    def __init__(self, rate=1):
         self.rate = rate
 
     def smooth(self, res, prev_res):
         for now in res:
             for prev in prev_res:
                 if iou(now, prev) > 0.5:
-                    now["vector"] = alpha * now["vector"] + (1 - alpha) * prev["vector"]
+                    now["vector"] = self.rate * now["vector"] + (1 - self.rate) * prev["vector"]
                     now["probability"], now["result"] = torch.max(now["vector"], 0)
                     now["probability"] = now["probability"] / now["vector"].sum()
                     break
@@ -90,7 +90,7 @@ class ExpressionClassifier:
             exp.append({"result":res, "probability":prob, "vector":pred, "box":box})
 
         if self.smoother:
-            self.smoother.smooth(exp, self.prev_exp, self.smooth_rate)
+            self.smoother.smooth(exp, self.prev_exp)
         self.prev_exp = exp
         return exp
 
