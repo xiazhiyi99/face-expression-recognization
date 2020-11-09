@@ -24,13 +24,13 @@ def iou(now, prev):
     return cross / union
 
 
-def smooth(res, prev_res, alpha=0.3):
+def smooth(res, prev_res, alpha=0.1):
     for now in res:
         for prev in prev_res:
             if iou(now, prev)>0.5:
                 now["vector"] = alpha * now["vector"] + (1 - alpha) * prev["vector"]
-                now["confidence"], now["result"] = torch.max(now["vector"], 1)
-                now["confidence"] = now["confidence"] / now["vector"].sum()
+                now["probability"], now["result"] = torch.max(now["vector"], 0)
+                now["probability"] = now["probability"] / now["vector"].sum()
                 break
 
 
@@ -57,7 +57,7 @@ class FaceDetector:
         return frame
 
 class ExpressionClassifier:
-    def __init__(self, classifier, express_table):
+    def __init__(self, classifier, express_table, smooth_rate=1):
         self.classifier = classifier
         self.resizer = trans.Compose([
             trans.Resize((224)),
@@ -67,6 +67,8 @@ class ExpressionClassifier:
         ])
         self.output_range = express_table.keys()
         self.express_table = [v for k,v in express_table.items()]
+        self.prev_exp = []
+        self.smooth_rate = smooth_rate
 
     def detect(self, frame, boxes):
         exp = []
@@ -82,6 +84,9 @@ class ExpressionClassifier:
             pred = pred / pred.sum()
             prob, res = torch.max(pred, 0)
             exp.append({"result":res, "probability":prob, "vector":pred, "box":box})
+
+        smooth(exp, self.prev_exp, self.smooth_rate)
+        self.prev_exp = exp
         return exp
 
     def __draw(self, frame, data):
@@ -159,7 +164,7 @@ class VideoSolver:
 
 class Visualizer:
     def __init__(self, label_table, window_size=20):
-        self.fig= plt.figure(figsize=(1600,1200))
+        self.fig= plt.figure(figsize=(80,60))
         self.frame = None
         self.vector = None
         self.line = []
@@ -170,7 +175,7 @@ class Visualizer:
         self.ax2 = self.fig.add_subplot(2, 2, 2)
         self.ax3 = self.fig.add_subplot(2, 1, 2)
 
-    def update(self, frame, data):
+    def update(self, data, frame):
         self.frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         if data:
             # find the biggest face
@@ -182,17 +187,17 @@ class Visualizer:
                     self.vector = d["vector"].squeeze().numpy()
                     area = w * h
                     max_d = d
-            self.frame = self.draw_frame(self.frame, max_d)
+            self.frame = self.draw_frame(max_d, self.frame)
             self.line.append(self.vector)
         if len(self.line)>self.window_size:
             self.line = self.line[1:]
 
-    def draw_frame(self, frame, d):
-        x,y,w,h = d["box"]
-        res = d["result"]
-        prob = d["probability"]
+    def draw_frame(self, data, frame):
+        x,y,w,h = data["box"]
+        res = data["result"]
+        prob = data["probability"]
         #print(res)
-        cv2.rectangle(frame, d["box"], (0,0,255), 2)
+        cv2.rectangle(frame, data["box"], (0,0,255), 2)
         cv2.putText(frame, "%s: %f"%(self.label_table[res], prob), (x,y-10),
                     cv2.FONT_HERSHEY_COMPLEX, 0.5, (0,0,155), 1)
         return frame
@@ -210,21 +215,27 @@ class Visualizer:
             self.ax2.set_xticklabels(self.label_table)
             #xs = [np.arange(0,len(self.vector))]
             self.ax3.plot(self.line,LineWidth=2)
+            self.ax3.legend(self.label_table, loc=4)
 
 if __name__=="__main__":
     detector = FaceDetector()
     mbn = get_trained_model(mbnet.MobileNetV3_Small(), "ckpt/affectnet_mobilenetv3_small_acc83.pth.tar")
-    classifier = ExpressionClassifier(mbn, affectnet_table)
+    classifier = ExpressionClassifier(mbn, affectnet_table, 0.3)
 
     cam_solver = CameraSolver(detector, classifier)
     cam_solver.start(0)
     _,frame = cam_solver.get_solved_frame()
     #cv2.imshow("", frame)
     #cv2.waitKey(0)
-    cam_solver.close()
+    #cam_solver.close()
 
     vid_solver = VideoSolver(detector, classifier)
     vid_solver.start("test/WIN_20200707_18_04_40_Pro.mp4")
     _,frame = vid_solver.get_solved_frame()
-    cv2.imshow("", frame)
-    cv2.waitKey(0)
+    #cv2.imshow("", frame)
+    #cv2.waitKey(0)
+    vizor = Visualizer(label_table=classifier.express_table)
+    while True:
+        vizor.update(*cam_solver.get_solved_frame())
+        vizor.show()
+        plt.pause(0.01)

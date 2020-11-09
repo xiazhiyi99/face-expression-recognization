@@ -68,6 +68,7 @@ for epoch in range(MAX_EPOCH):
             state = {'state_dict':model.state_dict(), 'optimizer':optimizer.state_dict(), 'epoch':epoch}
             print("# Best acc:%f, saving model..."%acc)
             torch.save(state, 'ckpt/%s_mobilenet_small.pth.tar'%DATASET)
+
 print("Complete. Best acc:", best_acc)
 
 
