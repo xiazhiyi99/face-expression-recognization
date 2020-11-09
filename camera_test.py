@@ -1,3 +1,32 @@
+import model.mobilenetv3 as mbnet
+from solver import *
+
+
+detector = CV2FaceDetector('ckpt/haarcascade_frontalface_default.xml')
+model = get_trained_model(mbnet.MobileNetV3_Small(), "ckpt/affectnet_mobilenetv3_small_acc83.pth.tar")
+smoother = LinearExponentialSmoothing(0.3)
+classifier = ExpressionClassifier(model, affectnet_table, smoother)
+cam_solver = CameraSolver(detector, classifier)
+vizor = Visualizer(label_table=classifier.express_table)
+
+cam_solver.start(0)
+while True:
+    vizor.update(*cam_solver.get_solved_frame())
+    vizor.show()
+    plt.pause(0.01)
+
+
+
+
+
+
+
+
+
+
+
+
+''' old
 import cv2
 import mobilenetv3
 import torch
@@ -139,3 +168,4 @@ while(cam.isOpened()):
                     cv2.FONT_HERSHEY_COMPLEX, 0.5, (0,0,155), 1)
     vizor.update(frame, res)
     vizor.show()
+'''
