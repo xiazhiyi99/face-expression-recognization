@@ -45,7 +45,7 @@ class LinearExponentialSmoothing:
                     break
 
 
-class FaceDetector:
+class CV2FaceDetector:
     def __init__(self, model_para_dir='ckpt/haarcascade_frontalface_default.xml'):
         self.detector = cv2.CascadeClassifier(model_para_dir)
 
@@ -107,7 +107,7 @@ class ExpressionClassifier:
 
 
 class CameraSolver:
-    def __init__(self, face_detector:FaceDetector, classifier:ExpressionClassifier, fps=1):
+    def __init__(self, face_detector, classifier, fps=1):
         self.fps = fps
         self.detector = face_detector
         self.classifier = classifier
@@ -223,7 +223,7 @@ class Visualizer:
             self.ax3.legend(self.label_table, loc=4)
 
 if __name__=="__main__":
-    detector = FaceDetector()
+    detector = CV2FaceDetector()
     mbn = get_trained_model(mbnet.MobileNetV3_Small(), "ckpt/affectnet_mobilenetv3_small_acc83.pth.tar")
     classifier = ExpressionClassifier(mbn, affectnet_table)
 
