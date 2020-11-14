@@ -57,9 +57,7 @@ affectnet_table = {0:"Happy", 1:"Sad", 2:"Surprise", 3:"Fear", 4:"Disgust", 5:"A
 classifier = ExpressionClassifier(model, affectnet_table, smoother)
 ```
 
-## 可视化模块
-
-1. 相机检测器 solver.CameraSolver  
+4. 相机检测器 solver.CameraSolver  
 ```python
 cam_solver = CameraSolver(detector, classifier)
 # 打开相机，0代表本机相机，其他数字为外接相机
@@ -70,7 +68,7 @@ for i in range(100):
 cam_solver.close()
 ```
 
-2. 视频检测器 solver.VideoSolver  
+5. 视频检测器 solver.VideoSolver  
 ```python
 vid_solver = VideoSolver(detector, classifier)
 vid_solver.start("视频路径")
@@ -79,7 +77,9 @@ for i in range(100):
 vid_solver.close()
 ```
 
-3. 可视化类 solver.Visualizer
+## 可视化模块
+
+1. 可视化类 solver.Visualizer
 ```python
 # 实例化时需要传入label列表
 vizor = Visualizer(label_table=classifier.express_table)

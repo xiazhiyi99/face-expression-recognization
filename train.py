@@ -2,7 +2,7 @@ import torch
 import cv2
 import pathlib
 import numpy as np
-from mobilenetv3.mobilenetv3 import MobileNetV3_Small, MobileNetV3_Large
+from model.mobilenetv3 import MobileNetV3_Small, MobileNetV3_Large
 import datasets
 import tqdm
 
@@ -44,7 +44,6 @@ def eval_one_epoch(model, loader):
     pbar.set_description("evaluating...")
     for i, (data, label) in enumerate(pbar):
         data, label = data.to(device), label.to(device)
-        optimizer.zero_grad()
         pred = model(data)
         _, pred = torch.max(pred, 1)
         T = (pred == label).sum()
