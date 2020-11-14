@@ -54,12 +54,6 @@ class CV2FaceDetector:
         faces = self.detector.detectMultiScale(gray, minSize=(100, 100))
         return faces
 
-    def detect_and_draw(self, frame):
-        faces = self.detect(frame)
-        for box in faces:
-            cv2.rectangle(frame, box, (0,0,255), 2)
-        return frame
-
 class ExpressionClassifier:
     def __init__(self, classifier, express_table, smoother=None):
         self.classifier = classifier
@@ -75,6 +69,14 @@ class ExpressionClassifier:
         self.smoother = smoother
 
     def detect(self, frame, boxes):
+        '''
+        返回list，包含多个dict
+        每个dict对映boxes中每一个box，包含：
+            “vector”：网络输出的概率向量
+            “probability”：概率向量中最大概率值
+            “result”：最大概率值对映索引
+            “box”：box坐标
+        '''
         exp = []
         for box in boxes:
             x,y,w,h = box
@@ -128,6 +130,7 @@ class CameraSolver:
             raise Exception("Camera Error")
 
     def get_solved_frame(self):
+        # 从相机得到一帧画面，并返回检测结果和画面
         frame = self.get_frame()
         faces = self.detector.detect(frame)
         expressions = self.classifier.detect(frame, faces)
@@ -160,6 +163,7 @@ class VideoSolver:
             raise Exception("Video Error")
 
     def get_solved_frame(self):
+        # 从视频得到下一帧画面，并返回检测结果和画面
         frame = self.get_frame()
         faces = self.detector.detect(frame)
         expressions = self.classifier.detect(frame, faces)
@@ -176,14 +180,17 @@ class Visualizer:
         self.window_size = window_size
         self.label_table = label_table
 
+        # ax1：实时检测画面
         self.ax1 = self.fig.add_subplot(2, 2, 1)
+        # ax2：直方图
         self.ax2 = self.fig.add_subplot(2, 2, 2)
+        # ax3：时序折线
         self.ax3 = self.fig.add_subplot(2, 1, 2)
 
     def update(self, data, frame):
         self.frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         if data:
-            # find the biggest face
+            # 若单张图片包含多个检测框,直方图和折线图使用框面积最大的
             area = 0
             max_d = None
             for d in data:
@@ -198,6 +205,7 @@ class Visualizer:
             self.line = self.line[1:]
 
     def draw_frame(self, data, frame):
+        # 将检测框画到实际画面里
         x,y,w,h = data["box"]
         res = data["result"]
         prob = data["probability"]

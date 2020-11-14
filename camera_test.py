@@ -14,6 +14,7 @@ while True:
     vizor.update(*cam_solver.get_solved_frame())
     vizor.show()
     plt.pause(0.01)
+cam_solver.close()
 
 
 
