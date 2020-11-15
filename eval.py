@@ -14,26 +14,33 @@ def eval(model, loader, label):
     FP = np.zeros((len(label)))
     FN = np.zeros((len(label)))
     TN = np.zeros((len(label)))
-    model.eval()
+    CNT = np.zeros((len(label)))
+    model.to(device).eval()
     pbar = tqdm.tqdm(loader)
     pbar.set_description("evaluating...")
-    for _, (data, label) in enumerate(pbar):
-        data, label = data.to(device), label.to(device)
+    for _, (data, gt) in enumerate(pbar):
+        data, gt = data.to(device), gt.to(device)
         pred = model(data)
         _, pred = torch.max(pred, 1)
-        for i in range(len(label)):
-            TP[i] += (pred == i and label == i).sum().item()
-            FP[i] += (pred == i and label != i).sum().item()
-            TN[i] += (pred != i and label != i).sum().item()
-            FN[i] += (pred != i and label = i).sum().item()
-    avg_acc = Ttot / (Ttot + Ftot)
-    print("Accuracy:", avg_acc)
+        pred = pred.cpu().numpy()
+        gt = gt.cpu().numpy()
+        for i,(k,v) in enumerate(label.items()):
+            TP[i] += np.logical_and(pred == k, gt == k).sum()
+            FP[i] += np.logical_and(pred == k, gt != k).sum()
+            FN[i] += np.logical_and(pred != k, gt == k).sum()
+            TN[i] += np.logical_and(pred != k, gt != k).sum()
+            CNT[i] += (gt == k).sum()
+    label = [v for k,v in label.items()]
     for i in range(len(label)):
-        TP[i] += (pred == i and label == i).sum().item()
-        FP[i] += (pred == i and label != i).sum().item()
-        TN[i] += (pred != i and label != i).sum().item()
-        FN[i] += (pred != i and label = i).sum().item()
-    return avg_acc
+        print("%9s: precision:%.2f recall:%.2f (%.1f%%, %d)"%(
+            label[i], TP[i]/(TP[i]+FP[i]), TP[i]/(TP[i]+FN[i]), 
+            CNT[i]/CNT.sum()*100, CNT[i],
+        ))
+    print("%9s: precision:%.2f recall:%.2f (%.1f%%, %d)"%(
+            "Average", (TP/(TP+FP)).mean(), (TP/(TP+FN)).mean(), 
+            100, CNT.sum(),
+        ))
+    return
 
 _, valLoader = datasets.get_loader(setname="raf-db", batch_size=16, shuffle=True, num_workers=4)
 ckpt = torch.load("ckpt/raf-db_mobilenetv3_small_acc72.pth.tar", map_location='cpu')
