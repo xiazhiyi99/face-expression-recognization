@@ -10,7 +10,17 @@ from torch.utils.data.sampler import WeightedRandomSampler
 
 transform = trans.Compose([
     trans.RandomHorizontalFlip(0.5),
-    #trans.Rand
+    trans.RandomResizedCrop((224,224),scale=(0.9,1.0)),
+    #trans.Resize((224,224)),
+    trans.ColorJitter(brightness=10),
+    trans.ColorJitter(contrast=10),
+    trans.ColorJitter(saturation=10),
+    trans.ToTensor(),
+    trans.Normalize(mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225]),
+])
+
+transform_test = trans.Compose([
     trans.Resize((224,224)),
     trans.ToTensor(),
     trans.Normalize(mean=[0.485, 0.456, 0.406],
@@ -37,6 +47,7 @@ class AffectNetDataset(datautils.Dataset):
 
 class RAFDBDataset(datautils.Dataset):
     def __init__(self, split='train'):
+        self.split = split
         f = open('./data/RAF-DB/EmoLabel/list_patition_label.txt')
         self.labels = [line.strip('\n').split(' ') for line in f.readlines()]
         self.labels = {k:int(v) for [k,v] in self.labels}
@@ -46,7 +57,10 @@ class RAFDBDataset(datautils.Dataset):
     
     def __getitem__(self, idx):
         img = PIL.Image.open(str(self.datalist[idx]))
-        img = transform(img)
+        if self.split=="train":
+            img = transform(img)
+        else:
+            img = transform_test(img)
         label = self.labels[self.datalist[idx].name]
         return img, label
     

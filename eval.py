@@ -42,8 +42,8 @@ def eval(model, loader, label):
         ))
     return
 
-valLoader,_ = datasets.get_loader(setname="raf-db", batch_size=16,use_sampler=False, num_workers=4)
-ckpt = torch.load("ckpt/raf-db_mobilenet_small_acc62.pth.tar", map_location='cpu')
+_, valLoader = datasets.get_loader(setname="raf-db", batch_size=16,use_sampler=False, num_workers=4)
+ckpt = torch.load("ckpt/raf-db_mobilenet_small.pth.tar", map_location='cpu')
 model = MobileNetV3_Small()
 model.load_state_dict(ckpt["state_dict"])
 rafdb_table = {1:"Surprise", 2:"Fear", 3:"Disgust", 4:"Happiness", 5:"Sadness", 6:"Anger", 7:"Neutral"}
