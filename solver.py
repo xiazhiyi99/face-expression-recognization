@@ -6,8 +6,8 @@ import PIL.Image as Image
 import matplotlib.pyplot as plt
 import time
 import numpy as np
-
 import matplotlib
+import json
 matplotlib.use("Qt5Agg")
 
 rafdb_table = {1:"Surprise", 2:"Fear", 3:"Disgust", 4:"Happiness", 5:"Sadness", 6:"Anger", 7:"Neutral"}
