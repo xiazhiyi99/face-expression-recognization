@@ -67,7 +67,10 @@ class ExpressionClassifier:
         self.express_table = [v for k,v in express_table.items()]
         self.prev_exp = []
         self.smoother = smoother
+        self.device = torch.device("cpu")
 
+    def to(self, device):
+        self.device = device
     def detect(self, frame, boxes):
         '''
         返回list，包含多个dict
@@ -84,6 +87,8 @@ class ExpressionClassifier:
             crop = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
             crop = self.resizer(Image.fromarray(crop))
             crop = torch.unsqueeze(crop, 0)
+            crop.to(self.device)
+            self.classifier.to(self.device)
             pred = self.classifier(crop).detach().relu()
             pred = torch.squeeze(pred, 0)
             pred = pred[list(self.output_range)]

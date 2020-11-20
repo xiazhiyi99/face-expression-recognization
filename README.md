@@ -18,6 +18,19 @@ cd face-expression-recognization
 python ./camera_test.py
 ```
 
+## API
+
+api.BatchSolver  
+输出格式 json  
+
+| 标签      | 内容      |  
+|----------|----------|
+|Vector    |浮点数list，7个表情类对映概率，大小为[batch_size, 7]|
+|Class     |字符串list，预测的标签，大小为[batch_size]|
+|Boxes     |整数list，按照xywh存储，若没有目标存储为[0,0,0,0]，大小为[batch_size, 4]|
+|Exist     |布尔型list，图片中是否检测出人脸，大小为[batch_size]|
+|Index     |整数list，图片对映的数字索引，大小为[batch_size]|
+       
 ## 训练模块
 
 1. 准备数据集并修改 datasets.py
