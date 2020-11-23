@@ -10,11 +10,11 @@ from torch.utils.data.sampler import WeightedRandomSampler
 
 transform = trans.Compose([
     trans.RandomHorizontalFlip(0.5),
-    trans.RandomResizedCrop((224,224),scale=(0.9,1.0)),
-    #trans.Resize((224,224)),
-    trans.ColorJitter(brightness=10),
-    trans.ColorJitter(contrast=10),
-    trans.ColorJitter(saturation=10),
+    #trans.RandomResizedCrop((224,224),scale=(0.98,1.0)),
+    trans.Resize((224,224)),
+    #trans.ColorJitter(brightness=1),
+    #trans.ColorJitter(contrast=1),
+    #trans.ColorJitter(saturation=1),
     trans.ToTensor(),
     trans.Normalize(mean=[0.485, 0.456, 0.406],
                     std=[0.229, 0.224, 0.225]),
@@ -35,6 +35,24 @@ class AffectNetDataset(datautils.Dataset):
 
         self.datapath = pathlib.Path('./data/AffectNet/output/data')
         self.datalist = [x for x in self.datapath.glob('./*jpg')]
+    
+    def __getitem__(self, idx):
+        img = PIL.Image.open(str(self.datalist[idx]))
+        img = transform(img)
+        label = self.labels[self.datalist[idx].name]
+        return img, label
+    
+    def __len__(self):
+        return len(self.datalist)
+
+class AffectNetDataset8(datautils.Dataset):
+    def __init__(self, split="train"):
+        f = open('./data/affectnet8/labels.json')
+        self.labels = json.load(f)
+        f.close()
+
+        self.datapath = pathlib.Path('./data/affectnet8/output')
+        self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
     
     def __getitem__(self, idx):
         img = PIL.Image.open(str(self.datalist[idx]))
@@ -91,7 +109,8 @@ class RAFDBDataset(datautils.Dataset):
 
 
 def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwargs):
-    dataset_book = {"affectnet":AffectNetDataset, "raf-db":RAFDBDataset}
+    dataset_book = {"affectnet":AffectNetDataset, "raf-db":RAFDBDataset,
+                    "affectnet8":AffectNetDataset8}
     if setname == "raf-db":
         trainset = RAFDBDataset('train')
         trainsampler = trainset.get_sampler() if use_sampler else None
@@ -106,6 +125,12 @@ def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwa
         val_size = len(dataset) -  train_size
         trainset, testset = datautils.random_split(dataset, [train_size, val_size])
         trainloader, testloader = datautils.DataLoader(trainset, **kwargs), datautils.DataLoader(testset, **kwargs)
+        return trainloader, testloader
+    elif setname == "affectnet8":
+        trainset = AffectNetDataset8('train')
+        testset = AffectNetDataset8('val')
+        trainloader = datautils.DataLoader(trainset,**kwargs) 
+        testloader = datautils.DataLoader(testset, **kwargs)
         return trainloader, testloader
 
 if __name__=="__main__":

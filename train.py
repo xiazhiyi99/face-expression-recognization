@@ -8,8 +8,8 @@ import tqdm
 
 MAX_EPOCH = 60
 LR = 1e-3
-DATASET = "raf-db"
-BATCH_SIZE = 64
+DATASET = "affectnet8"
+BATCH_SIZE = 32
 DECAY_STEP = [15,30,45]
 # load model
 ckpt = torch.load("ckpt/mbv3_small.pth.tar", map_location='cpu')
@@ -20,7 +20,7 @@ model.to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), LR)
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, DECAY_STEP, 0.3)
-trainloader, valloader = datasets.get_loader(setname=DATASET, batch_size=BATCH_SIZE, use_sampler=True, num_workers=4)
+trainloader, valloader = datasets.get_loader(setname=DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
 def train_one_epoch(model, optimizer, loader):
     pbar = tqdm.tqdm(loader)

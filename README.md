@@ -29,7 +29,11 @@ api.BatchSolver
 |Class     |字符串list，预测的标签，大小为[batch_size]|
 |Boxes     |整数list，按照xywh存储，若没有目标存储为[0,0,0,0]，大小为[batch_size, 4]|
 |Exist     |布尔型list，图片中是否检测出人脸，大小为[batch_size]|
-|Index     |整数list，图片对映的数字索引，大小为[batch_size]|
+|Index     |整数list，对映图片帧序号cur_frame，大小为[batch_size]|
+
+类别编号：
+rafdb_table = ["Surprise", "Fear", "Disgust", "Happiness", "Sadness", "Anger", "Neutral"]
+affectnet_table = ["Neutral", "Happy", "Sad", "Surprise", "Fear", "Disgust", "Anger"]
        
 ## 训练模块
 
