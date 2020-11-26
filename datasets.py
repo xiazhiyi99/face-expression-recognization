@@ -45,13 +45,13 @@ class AffectNetDataset(datautils.Dataset):
     def __len__(self):
         return len(self.datalist)
 
-class AffectNetDataset8(datautils.Dataset):
+class AffectNetDataset7(datautils.Dataset):
     def __init__(self, split="train"):
-        f = open('./data/affectnet8/labels.json')
+        f = open('./data/AffectNet7/labels.json')
         self.labels = json.load(f)
         f.close()
 
-        self.datapath = pathlib.Path('./data/affectnet8/output')
+        self.datapath = pathlib.Path('./data/AffectNet7/output/data')
         self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
     
     def __getitem__(self, idx):
@@ -110,7 +110,7 @@ class RAFDBDataset(datautils.Dataset):
 
 def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwargs):
     dataset_book = {"affectnet":AffectNetDataset, "raf-db":RAFDBDataset,
-                    "affectnet8":AffectNetDataset8}
+                    "affectnet7":AffectNetDataset7}
     if setname == "raf-db":
         trainset = RAFDBDataset('train')
         trainsampler = trainset.get_sampler() if use_sampler else None
@@ -126,9 +126,9 @@ def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwa
         trainset, testset = datautils.random_split(dataset, [train_size, val_size])
         trainloader, testloader = datautils.DataLoader(trainset, **kwargs), datautils.DataLoader(testset, **kwargs)
         return trainloader, testloader
-    elif setname == "affectnet8":
-        trainset = AffectNetDataset8('train')
-        testset = AffectNetDataset8('val')
+    elif setname == "affectnet7":
+        trainset = AffectNetDataset7('train')
+        testset = AffectNetDataset7('val')
         trainloader = datautils.DataLoader(trainset,**kwargs) 
         testloader = datautils.DataLoader(testset, **kwargs)
         return trainloader, testloader
