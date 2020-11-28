@@ -29,11 +29,11 @@ transform_test = trans.Compose([
 
 class AffectNetDataset(datautils.Dataset):
     def __init__(self):
-        f = open('./data/AffectNet/output/labels.json')
+        f = open('/data2/xzy/face-expression-recognization/data/AffectNet/output/labels.json')
         self.labels = json.load(f)
         f.close()
 
-        self.datapath = pathlib.Path('./data/AffectNet/output/data')
+        self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/AffectNet/output/data')
         self.datalist = [x for x in self.datapath.glob('./*jpg')]
     
     def __getitem__(self, idx):
@@ -47,11 +47,11 @@ class AffectNetDataset(datautils.Dataset):
 
 class AffectNetDataset7(datautils.Dataset):
     def __init__(self, split="train"):
-        f = open('./data/AffectNet7/labels.json')
+        f = open('/data2/xzy/face-expression-recognization/data/AffectNet7/labels.json')
         self.labels = json.load(f)
         f.close()
 
-        self.datapath = pathlib.Path('./data/AffectNet7/output/data')
+        self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/AffectNet7/output/data')
         self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
     
     def __getitem__(self, idx):

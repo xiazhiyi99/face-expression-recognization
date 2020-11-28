@@ -75,7 +75,7 @@ class Block(nn.Module):
 
 class MobileNetV3_Large(nn.Module):
     # Not Use
-    def __init__(self, num_classes=1000):
+    def __init__(self, num_classes=1000, loss="cross_entropy"):
         super(MobileNetV3_Large, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=2, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(16)
@@ -108,6 +108,10 @@ class MobileNetV3_Large(nn.Module):
         self.hs3 = hswish()
         self.linear4 = nn.Linear(1280, num_classes)
         self.init_params()
+        if loss=="cross_entropy":
+            self.criterion = nn.CrossEntropyLoss()
+        else:
+            self.criterion = loss
 
     def init_params(self):
         for m in self.modules():
@@ -132,6 +136,11 @@ class MobileNetV3_Large(nn.Module):
         out = self.hs3(self.bn3(self.linear3(out)))
         out = self.linear4(out)
         return out
+        
+    def get_loss(self, x, y):
+        out =  self.forward(x)
+        loss = self.criterion(out, y)
+        return loss
 
 
 
@@ -169,6 +178,7 @@ class MobileNetV3_Small(nn.Module):
             self.criterion = nn.CrossEntropyLoss()
         else:
             self.criterion = loss
+            
     def init_params(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
