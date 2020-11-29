@@ -41,28 +41,7 @@ affectnet_table = ["Neutral", "Happy", "Sad", "Surprise", "Fear", "Disgust", "An
 
 2. 从https://github.com/xiaolai-sqlai/mobilenetv3 下载预训练模型mbn_small.pth.tar至[root/ckpt]
 
-3. 修改train.py内的超参数 
-
-4. 执行
-
-```shell
-python train.py
-```
-
-5. 评估模型
-
-```shell
-python eval.py
-evaluating...: 100%|██████████████████████████████████████████████████████████████████████████| 192/192 [00:10<00:00, 18.40it/s]
- Surprise: precision:0.71 recall:0.69 (10.7%, 329)
-     Fear: precision:0.70 recall:0.42 (2.4%, 74)
-  Disgust: precision:0.42 recall:0.28 (5.2%, 160)
-Happiness: precision:0.85 recall:0.87 (38.6%, 1185)
-  Sadness: precision:0.64 recall:0.67 (15.6%, 478)
-    Anger: precision:0.63 recall:0.58 (5.3%, 162)
-  Neutral: precision:0.66 recall:0.71 (22.2%, 680)
-  Average: precision:0.66 recall:0.60 (100.0%, 3068)
-```
+...
 
 ## 预测模块
 
