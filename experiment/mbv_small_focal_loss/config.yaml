@@ -7,11 +7,11 @@ dataset:
   train:
     enable: True
     random_flip: True
-    file_path: '/data2/xzy/face-expression-recognization/data/AffectNet7/output/train*'   # for example, ../../data/KITTI/pickle_files/patch_caronly_train.pickle
+    file_path: '/data2/xzy/face-expression-recognization/data/AffectNet7/output/train*'   
   val:
     enable: True
     random_flip: False
-    file_file: '/data2/xzy/face-expression-recognization/data/AffectNet7/output/val*'   # xxxx_val.pickle
+    file_file: '/data2/xzy/face-expression-recognization/data/AffectNet7/output/val*'  
 
 model:
   name: 'mobile_net_v3_small'
