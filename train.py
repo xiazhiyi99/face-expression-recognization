@@ -6,10 +6,14 @@ from model.mobilenetv3 import MobileNetV3_Small, MobileNetV3_Large
 from model.loss import MultiFocalLoss
 import datasets
 import tqdm
+
+BASE_DIR = ROOT_DIR = pathlib.Path(__file__).absolute()
+import sys
+sys.path.append(ROOT_DIR.__str__())
+
 import argparse
 import yaml
 import time
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", type=str, default="./config.yaml")
@@ -27,14 +31,14 @@ def main():
     # DECAY_STEP = [10,20,30,40]
     # FOCAL_LOSS = True
     # load model
-    model = get_pretrained_model(config["model"])
+    model = get_pretrained_model(config)
 
     optimizer = torch.optim.Adam(model.parameters(), config["optimizer"]["lr"])
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
                     config["scheduler"]["lr_scheduler"]["decay_list"],
                     config["scheduler"]["lr_scheduler"]["decay_rate"])
-    trainloader, valloader = get_loader(config["dataset"])
-    trainer = Trainer(config["trainer"], 
+    trainloader, valloader = get_loader(config)
+    trainer = Trainer(config, 
                       model,
                       optimizer,
                       trainloader,
@@ -43,6 +47,7 @@ def main():
     trainer.train()
 
 def get_pretrained_model(config):
+    config = config["model"]
     backbone = MobileNetV3_Small if config["name"] == "mobile_net_v3_small" else MobileNetV3_Large
     if config["use_focal_loss"]:
         alpha = np.zeros((1000))
@@ -60,6 +65,7 @@ def get_pretrained_model(config):
 
 def get_loader(config):
     # todo
+    config = config["dataset"]
     DATASET = config["name"]
     BATCH_SIZE = config["batch_size"]
     workers = config["workers"]
@@ -80,6 +86,7 @@ class Timer:
 
 class Trainer:
     def __init__(self, config, model, optimizer, trainloader, valloader, lr_scheduler):
+        config = config["trainer"]
         self.MAX_EPOCH = config["max_epoch"]
         self.EVAL_FREQUENCY = config["eval_frequency"]
         self.ckpt_dir = pathlib.Path(config["ckpt_dir"])

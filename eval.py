@@ -15,12 +15,49 @@ BASE_DIR = ROOT_DIR = pathlib.Path(__file__).absolute()
 import sys
 sys.path.append(ROOT_DIR.__str__())
 
+import argparse
+import yaml
+parser = argparse.ArgumentParser()
+parser.add_argument("--config", type=str, default="./config.yaml")
+FLAGS = parser.parse_args()
+f = open(FLAGS.config)
+config = yaml.load(f, Loader=yaml.FullLoader)
+f.close()
 
+def main():
+    model = get_model(config)
+    _, valloader = get_loader(config)
+    tester = Tester(config, model, valloader)
+    tester.eval()
+
+
+def get_model(config):
+    model_name = config["model"]["name"]
+    config = config["tester"]
+    path = config["resume_model"]
+    print("Evaluating", path)
+    ckpt = torch.load(path, map_location='cpu')
+    if model_name == "mobile_net_v3_small":
+        model = MobileNetV3_Small()
+    else:
+        model = MobileNetV3_Large()
+    model.load_state_dict(ckpt["state_dict"])
+    return model
+
+def get_loader(config):
+    # todo
+    config = config["dataset"]
+    DATASET = config["name"]
+    BATCH_SIZE = config["batch_size"]
+    workers = config["workers"]
+    trainloader, valloader = datasets.get_loader(setname=DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=workers)
+    return trainloader, valloader
 
 class Tester:
     def __init__(self, config, model, testloader):
+        config = config["tester"]
         self.confusion_matrix = config["confusion_matrix_path"]
-        self.label = json.loads(config["label"])
+        self.label = eval(config["label"])
         self.loader = testloader
         self.model = model
 
@@ -86,6 +123,9 @@ class Tester:
         return
 
 if __name__ == "__main__":
+    main()
+
+if __name__ == "__main__  not use":
     ckpt_name = "affectnet7_mobilenet_small_floss_alpha2.pth.tar"
     print("Evaluating",ckpt_name)
     _, valLoader = datasets.get_loader(setname="affectnet7", batch_size=8,use_sampler=False, num_workers=4)
