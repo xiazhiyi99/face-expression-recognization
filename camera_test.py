@@ -5,7 +5,7 @@ from solver import *
 detector = CV2FaceDetector('ckpt/haarcascade_frontalface_default.xml')
 model = get_trained_model(mbnet.MobileNetV3_Small(), "ckpt/affectnet_mobilenetv3_small_acc83.pth.tar")
 smoother = LinearExponentialSmoothing(0.3)
-classifier = ExpressionClassifier(model, affectnet_table, smoother)
+classifier = ExpressionClassifier(model, {0:"Neutral", 1:"Happy", 2:"Sad", 3:"Surprise", 4:"Fear", 5:"Disgust", 6:"Anger"}, smoother)
 cam_solver = CameraSolver(detector, classifier)
 vizor = Visualizer(label_table=classifier.express_table)
 
