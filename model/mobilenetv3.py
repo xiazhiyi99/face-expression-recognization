@@ -7,7 +7,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import init
-from . import loss
+if __name__=="__main__":
+    import loss
+else:
+    from . import loss
 
 
 
@@ -207,13 +210,18 @@ class MobileNetV3_Small(nn.Module):
         out =  self.forward(x)
         loss = self.criterion(out, y)
         return loss
+        
 
 
 
 def test():
-    net = MobileNetV3_Small()
+    net = MobileNetV3_Large()
     x = torch.randn(2,3,224,224)
     y = net(x)
     print(y.size())
+    import ptflops
+    ops, params = ptflops.get_model_complexity_info(net, (3,224,224), as_strings=True, print_per_layer_stat=True, verbose=True)
+    #4MB
 
-# test()
+if __name__=="__main__":
+    test()

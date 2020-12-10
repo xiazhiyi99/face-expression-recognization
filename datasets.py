@@ -7,6 +7,7 @@ import cv2
 import PIL
 import numpy as np
 from torch.utils.data.sampler import WeightedRandomSampler
+import random
 
 transform = trans.Compose([
     trans.RandomHorizontalFlip(0.5),
@@ -53,6 +54,33 @@ class AffectNetDataset7(datautils.Dataset):
 
         self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/AffectNet7/output/data')
         self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
+    
+    def __getitem__(self, idx):
+        img = PIL.Image.open(str(self.datalist[idx]))
+        img = transform(img)
+        label = self.labels[self.datalist[idx].name]
+        return img, label
+    
+    def __len__(self):
+        return len(self.datalist)
+
+class AffectNetDataset7Balanced(datautils.Dataset):
+    def __init__(self, split="train"):
+        f = open('/data2/xzy/face-expression-recognization/data/AffectNet7/labels.json')
+        self.labels = json.load(f)
+        f.close()
+
+        self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/AffectNet7/output/data')
+        self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
+
+        balanced_list = []
+        cnt = np.zeros((8))
+        random.shuffle(self.datalist)
+        for d in self.datalist:
+            if cnt[self.labels[d.name]]<4500:
+                cnt[self.labels[d.name]] += 1
+                balanced_list.append(d)
+        self.datalist = balanced_list
     
     def __getitem__(self, idx):
         img = PIL.Image.open(str(self.datalist[idx]))
@@ -110,7 +138,7 @@ class RAFDBDataset(datautils.Dataset):
 
 def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwargs):
     dataset_book = {"affectnet":AffectNetDataset, "raf-db":RAFDBDataset,
-                    "affectnet7":AffectNetDataset7}
+                    "affectnet7":AffectNetDataset7, "affectnet7balanced":AffectNetDataset7Balanced}
     if setname == "raf-db":
         trainset = RAFDBDataset('train')
         trainsampler = trainset.get_sampler() if use_sampler else None
@@ -129,6 +157,12 @@ def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwa
     elif setname == "affectnet7":
         trainset = AffectNetDataset7('train')
         testset = AffectNetDataset7('val')
+        trainloader = datautils.DataLoader(trainset,**kwargs) 
+        testloader = datautils.DataLoader(testset, **kwargs)
+        return trainloader, testloader
+    elif setname == "affectnet7balanced":
+        trainset = AffectNetDataset7Balanced('train')
+        testset = AffectNetDataset7Balanced('val')
         trainloader = datautils.DataLoader(trainset,**kwargs) 
         testloader = datautils.DataLoader(testset, **kwargs)
         return trainloader, testloader

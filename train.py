@@ -3,6 +3,9 @@ import cv2
 import pathlib
 import numpy as np
 from model.mobilenetv3 import MobileNetV3_Small, MobileNetV3_Large
+from model.resnet import ResNet50, ResNet101, ResNet152
+from model.xception import Xception
+from model.ghostnet import GhostNet
 from model.loss import MultiFocalLoss
 import datasets
 import tqdm
@@ -48,7 +51,14 @@ def main():
 
 def get_pretrained_model(config):
     config = config["model"]
-    backbone = MobileNetV3_Small if config["name"] == "mobile_net_v3_small" else MobileNetV3_Large
+    #backbone = MobileNetV3_Small if config["name"] == "mobile_net_v3_small" else MobileNetV3_Large
+    model_dict = {"mobile_net_v3_small":MobileNetV3_Small,
+                  "mobile_net_v3_large":MobileNetV3_Large,
+                  "xception":Xception,
+                  "resnet50":ResNet50,
+                  "resnet101":ResNet101,
+                  "resnet152":ResNet152,
+                  "ghostnet":GhostNet}
     if config["use_focal_loss"]:
         alpha = np.zeros((1000))
         alpha[0:7] = np.array(config["focal_loss"]["alpha"])
