@@ -175,6 +175,56 @@ class VideoSolver:
         #self.classifier.draw(frame, expressions)
         return expressions, frame
 
+class CV2Visualizer:
+    def __init__(self, label_table, color_table=None):
+        self.label_table = label_table
+        self.color_table = color_table
+        self.frame = None
+        self.vector = None
+        self.data = None
+
+    def update(self, data, frame):
+        self.frame = frame #cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        self.vector = None
+        self.data = None
+        if data:
+            # 若单张图片包含多个检测框,直方图和折线图使用框面积最大的
+            area = 0
+            for d in data:
+                x, y, w, h = d["box"]
+                if w * h > area:
+                    self.vector = d["vector"].squeeze().numpy()
+                    area = w * h
+                    self.data = d
+
+    def draw_frame(self, data, frame):
+        # 将检测框画到实际画面里
+        x,y,w,h = data["box"]
+        res = data["result"]
+        prob = data["probability"]
+        vec = data["vector"]
+        #print(res)
+        if self.color_table:
+            color = self.color_table[res]
+        else:
+            color = (0,0,155)
+        cv2.rectangle(frame, data["box"], color, 2)
+        cv2.putText(frame, "%s: %f"%(self.label_table[res], prob), (x,y-10),
+                    cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 1)
+
+        for idx, label in enumerate(self.label_table):
+            vec_str = "%s:%.2f"%(label, vec[idx])
+            cv2.putText(frame, "%s"%vec_str, (20, 20+idx*20),
+                        cv2.FONT_HERSHEY_COMPLEX, 0.5, (0,0,155), 1)
+        return frame
+
+    def show(self):
+        if self.data:
+            frame = self.draw_frame(self.data, self.frame)
+        else:
+            frame = self.frame
+        if frame is not None:
+            cv2.imshow("Easy Visualizer", frame)
 
 class Visualizer:
     def __init__(self, label_table, window_size=20):

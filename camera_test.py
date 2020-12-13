@@ -1,19 +1,23 @@
 import model.mobilenetv3 as mbnet
+import cv2
 from solver import *
 
+label_table = {0:"Neutral", 1:"Happy", 2:"Sad", 3:"Surprise", 4:"Fear", 5:"Disgust", 6:"Anger"}
+color_table = [(100, 100, 0)]* 2 + [(0,0,155)]*5
 
 detector = CV2FaceDetector('ckpt/haarcascade_frontalface_default.xml')
-model = get_trained_model(mbnet.MobileNetV3_Small(), "ckpt/affectnet_mobilenetv3_small_acc83.pth.tar")
-smoother = LinearExponentialSmoothing(0.3)
-classifier = ExpressionClassifier(model, {0:"Neutral", 1:"Happy", 2:"Sad", 3:"Surprise", 4:"Fear", 5:"Disgust", 6:"Anger"}, smoother)
+model = get_trained_model(mbnet.MobileNetV3_Small(), "ckpt/checkpoint_best.pth.tar")
+smoother = LinearExponentialSmoothing(1)
+classifier = ExpressionClassifier(model, label_table, smoother)
 cam_solver = CameraSolver(detector, classifier)
-vizor = Visualizer(label_table=classifier.express_table)
+vizor = CV2Visualizer(label_table=classifier.express_table, color_table=color_table)
 
 cam_solver.start(0)
 while True:
     vizor.update(*cam_solver.get_solved_frame())
     vizor.show()
-    plt.pause(0.01)
+    #plt.pause(1)
+    cv2.waitKey(10)
 cam_solver.close()
 
 
