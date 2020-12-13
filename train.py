@@ -59,6 +59,7 @@ def get_pretrained_model(config):
                   "resnet101":ResNet101,
                   "resnet152":ResNet152,
                   "ghostnet":GhostNet}
+    backbone = model_dict[config["name"]]
     if config["use_focal_loss"]:
         alpha = np.zeros((1000))
         alpha[0:7] = np.array(config["focal_loss"]["alpha"])

@@ -80,6 +80,47 @@ class AffectNetDataset7Balanced(datautils.Dataset):
             if cnt[self.labels[d.name]]<4500:
                 cnt[self.labels[d.name]] += 1
                 balanced_list.append(d)
+        #print(cnt)
+        self.datalist = balanced_list
+    
+    def __getitem__(self, idx):
+        img = PIL.Image.open(str(self.datalist[idx]))
+        img = transform(img)
+        label = self.labels[self.datalist[idx].name]
+        return img, label
+    
+    def __len__(self):
+        return len(self.datalist)
+
+class AffectNetDataset5Balanced(datautils.Dataset):
+    """
+    7: {0:"Neutral", 1:"Happy", 2:"Sad", 3:"Surprise", 4:"Fear", 5:"Disgust", 6:"Anger"}
+            ||
+            ||
+            \/
+    5: {0:"Neutral", 1:"Happy", 2:"Sad", 3:"Panic(3:Surprise, 4:Fear)", 4:"Hatred(5:Disgust, 6:Anger)"}
+    
+    """
+    def __init__(self, split="train"):
+        f = open('/data2/xzy/face-expression-recognization/data/AffectNet7/labels.json')
+        self.labels = json.load(f)
+        f.close()
+        for (k,v) in [(k,v) for k,v in self.labels.items()]:
+            if v == 4:
+                self.labels[k] = 3
+            elif v == 5 or v == 6:
+                self.labels[k] = 4
+
+        self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/AffectNet7/output/data')
+        self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
+
+        balanced_list = []
+        cnt = np.zeros((8))
+        random.shuffle(self.datalist)
+        for d in self.datalist:
+            if cnt[self.labels[d.name]]<19600:
+                cnt[self.labels[d.name]] += 1
+                balanced_list.append(d)
         self.datalist = balanced_list
     
     def __getitem__(self, idx):
@@ -98,7 +139,7 @@ class RAFDBDataset(datautils.Dataset):
         self.labels = [line.strip('\n').split(' ') for line in f.readlines()]
         self.labels = {k:int(v) for [k,v] in self.labels}
         f.close()
-        self.datapath = pathlib.Path('/data/xzy/face-emotion/data/RAF-DB/Image/original')
+        self.datapath = pathlib.Path('./data/RAF-DB/Image/original')
         self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
     
     def __getitem__(self, idx):
@@ -135,6 +176,48 @@ class RAFDBDataset(datautils.Dataset):
         )
         return sampler
 
+class AffectNetDataset7RAFDBDataset7Balanced(datautils.Dataset):
+    def __init__(self, split="train"):
+        self.split = split
+        f = open('/data2/xzy/face-expression-recognization/data/AffectNet7/labels.json')
+        self.labels = json.load(f)
+        f.close()
+
+        self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/AffectNet7/output/data')
+        self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
+        
+        transfer = {1:3, 2:4, 3:5, 4:1, 5:2, 6:6, 7:0}
+        f = open('/data2/xzy/face-expression-recognization/data/RAF-DB/EmoLabel/list_patition_label.txt')
+        label = [line.strip('\n').split(' ') for line in f.readlines()]
+        for [k,v] in label:
+            self.labels[k] = transfer[int(v)]
+        f.close()
+
+        self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/RAF-DB/Image/original')
+        for x in self.datapath.glob('./%s*jpg'%split):
+            self.datalist.append(x)
+
+
+
+        balanced_list = []
+        cnt = np.zeros((8))
+        random.shuffle(self.datalist)
+        for d in self.datalist:
+            if cnt[self.labels[d.name]]<4395:
+                cnt[self.labels[d.name]] += 1
+                balanced_list.append(d)
+        print(cnt)
+        self.datalist = balanced_list 
+
+    
+    def __getitem__(self, idx):
+        img = PIL.Image.open(str(self.datalist[idx]))
+        img = transform(img)
+        label = self.labels[self.datalist[idx].name]
+        return img, label
+    
+    def __len__(self):
+        return len(self.datalist)
 
 def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwargs):
     dataset_book = {"affectnet":AffectNetDataset, "raf-db":RAFDBDataset,
@@ -160,18 +243,26 @@ def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwa
         trainloader = datautils.DataLoader(trainset,**kwargs) 
         testloader = datautils.DataLoader(testset, **kwargs)
         return trainloader, testloader
+    elif setname == "affectnet5balanced":
+        trainset = AffectNetDataset5Balanced('train')
+        testset = AffectNetDataset5Balanced('val')
+        trainloader = datautils.DataLoader(trainset,**kwargs) 
+        testloader = datautils.DataLoader(testset, **kwargs)
+        return trainloader, testloader
     elif setname == "affectnet7balanced":
         trainset = AffectNetDataset7Balanced('train')
         testset = AffectNetDataset7Balanced('val')
         trainloader = datautils.DataLoader(trainset,**kwargs) 
         testloader = datautils.DataLoader(testset, **kwargs)
         return trainloader, testloader
+    elif setname == "affectnet7_rafdb_balanced":
+        trainset = AffectNetDataset7RAFDBDataset7Balanced('train')
+        testset = AffectNetDataset7RAFDBDataset7Balanced('val')
+        trainloader = datautils.DataLoader(trainset,**kwargs) 
+        testloader = datautils.DataLoader(testset, **kwargs)
+        return trainloader, testloader
+
 
 if __name__=="__main__":
-    import tqdm
-    train_loader, test_loader = get_loader(setname='raf-db',batch_size=1, num_workers=4)
-    cnt = np.zeros(10)
-    pbar = tqdm.tqdm(train_loader)
-    for data, label in pbar:
-        cnt[label] += 1
-    print(cnt)
+    trainset = AffectNetDataset7RAFDBDataset7Balanced('train')
+    #trainset = AffectNetDataset7Balanced("train")
