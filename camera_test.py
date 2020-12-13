@@ -4,6 +4,7 @@ from solver import *
 
 label_table = {0:"Neutral", 1:"Happy", 2:"Sad", 3:"Surprise", 4:"Fear", 5:"Disgust", 6:"Anger"}
 color_table = [(100, 100, 0)]* 2 + [(0,0,155)]*5
+smooth_rate = 1 # 1 for no smoothing, 0 for no changing
 
 detector = CV2FaceDetector('ckpt/haarcascade_frontalface_default.xml')
 model = get_trained_model(mbnet.MobileNetV3_Small(), "ckpt/checkpoint_best.pth.tar")
