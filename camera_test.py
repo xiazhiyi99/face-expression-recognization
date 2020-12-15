@@ -12,11 +12,15 @@ classifier = ExpressionClassifier(model, label_table, smoother)
 cam_solver = CameraSolver(detector, classifier)
 vizor = CV2Visualizer(label_table=classifier.express_table, color_table=color_table)
 
-cam_solver.start(0)
+cam_id = 0 # 本机摄像头
+# cam_id = 'rtsp://admin:bwton123@192.168.24.64:554/Streaming/Channels/101' # RTSP视频流
+
+cam_solver.start(cam_id)
 while True:
-    vizor.update(*cam_solver.get_solved_frame())
-    vizor.show()
-    #plt.pause(1)
+    rt = cam_solver.get_solved_frame()
+    if rt:
+        vizor.update(*rt)
+        vizor.show()
     cv2.waitKey(10)
 cam_solver.close()
 
