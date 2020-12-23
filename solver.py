@@ -14,6 +14,71 @@ rafdb_table = {1:"Surprise", 2:"Fear", 3:"Disgust", 4:"Happiness", 5:"Sadness", 
 affectnet_table = {0:"Happy", 1:"Sad", 2:"Surprise", 3:"Fear", 4:"Disgust", 5:"Anger"}
 affectnet7_table = {0:"Neutral", 1:"Happy", 2:"Sad", 3:"Surprise", 4:"Fear", 5:"Disgust", 6:"Anger"}
 
+import threading
+
+# 添加RTSP视频流支持
+class RTSCapture(cv2.VideoCapture):
+    """Real Time Streaming Capture.
+    这个类必须使用 RTSCapture.create 方法创建，请不要直接实例化
+    """
+
+    _cur_frame = None
+    _reading = False
+    schemes = ["rtsp://", "rtmp://"] #用于识别实时流
+
+    @staticmethod
+    def create(url, *schemes):
+        """实例化&初始化
+        rtscap = RTSCapture.create("rtsp://example.com/live/1")
+        or
+        rtscap = RTSCapture.create("http://example.com/live/1.m3u8", "http://")
+        """
+        rtscap = RTSCapture(url)
+        rtscap.frame_receiver = threading.Thread(target=rtscap.recv_frame, daemon=True)
+        rtscap.schemes.extend(schemes)
+        if isinstance(url, str) and url.startswith(tuple(rtscap.schemes)):
+            rtscap._reading = True
+        elif isinstance(url, int):
+            # 这里可能是本机设备
+            pass
+
+        return rtscap
+
+    def isStarted(self):
+        """替代 VideoCapture.isOpened() """
+        ok = self.isOpened()
+        if ok and self._reading:
+            ok = self.frame_receiver.is_alive()
+        return ok
+
+    def recv_frame(self):
+        """子线程读取最新视频帧方法"""
+        while self._reading and self.isOpened():
+            ok, frame = self.read()
+            if not ok: break
+            self._cur_frame = frame
+        self._reading = False
+
+    def read2(self):
+        """读取最新视频帧
+        返回结果格式与 VideoCapture.read() 一样
+        """
+        frame = self._cur_frame
+        self._cur_frame = None
+        return frame is not None, frame
+
+    def start_read(self):
+        """启动子线程读取视频帧"""
+        self.frame_receiver.start()
+        self.read_latest_frame = self.read2 if self._reading else self.read
+
+    def stop_read(self):
+        """退出子线程方法"""
+        self._reading = False
+        if self.frame_receiver.is_alive():
+            self.frame_receiver.join()
+
+
 def iou(now, prev):
     x1,y1,w1,h1 = now["box"]
     x2,y2,w2,h2 = prev["box"]
@@ -67,7 +132,7 @@ class ExpressionClassifier:
         self.express_table = [v for k,v in express_table.items()]
         self.prev_exp = []
         self.smoother = smoother
-        self.device = torch.device("cpu")
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     def to(self, device):
         self.device = device
@@ -87,7 +152,7 @@ class ExpressionClassifier:
             crop = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
             crop = self.resizer(Image.fromarray(crop))
             crop = torch.unsqueeze(crop, 0)
-            crop.to(self.device)
+            crop = crop.to(self.device)
             self.classifier.to(self.device)
             pred = self.classifier(crop).detach().relu()
             pred = torch.squeeze(pred, 0)
@@ -121,15 +186,17 @@ class CameraSolver:
         self.cam = None
 
     def start(self, cam_id=0):
-        self.cam = cv2.cv2.VideoCapture(cam_id)
+        # self.cam = cv2.VideoCapture(cam_id)
+        self.cam = RTSCapture.create(cam_id)
+        self.cam.start_read()
 
     def close(self):
         if self.cam:
             self.cam.release()
 
     def get_frame(self):
-        if self.cam and self.cam.isOpened():
-            _, frame = self.cam.read()
+        if self.cam and self.cam.isStarted():
+            _, frame = self.cam.read_latest_frame()
             return frame
         else:
             raise Exception("Camera Error")
@@ -137,6 +204,8 @@ class CameraSolver:
     def get_solved_frame(self):
         # 从相机得到一帧画面，并返回检测结果和画面
         frame = self.get_frame()
+        if frame is None:
+            return None
         faces = self.detector.detect(frame)
         expressions = self.classifier.detect(frame, faces)
         #self.classifier.draw(frame, expressions)
@@ -193,7 +262,7 @@ class CV2Visualizer:
             for d in data:
                 x, y, w, h = d["box"]
                 if w * h > area:
-                    self.vector = d["vector"].squeeze().numpy()
+                    self.vector = d["vector"].squeeze().cpu().numpy()
                     area = w * h
                     self.data = d
 
@@ -208,7 +277,7 @@ class CV2Visualizer:
             color = self.color_table[res]
         else:
             color = (0,0,155)
-        cv2.rectangle(frame, data["box"], color, 2)
+        cv2.rectangle(frame, (x, y), (x+w, y+h), color, 2)
         cv2.putText(frame, "%s: %f"%(self.label_table[res], prob), (x,y-10),
                     cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 1)
 

@@ -1,13 +1,45 @@
 import model.mobilenetv3 as mbnet
 import cv2
 from solver import *
+import torch 
+from model.mobilenetv3 import MobileNetV3_Small, MobileNetV3_Large
+from model.resnet import ResNet50, ResNet101, ResNet152
+from model.xception import Xception
+from model.ghostnet import GhostNet
+import argparse
+import yaml
 
-label_table = {0:"Neutral", 1:"Happy", 2:"Sad", 3:"Surprise", 4:"Fear", 5:"Disgust", 6:"Anger"}
-color_table = [(100, 100, 0)]* 2 + [(0,0,155)]*5
-smooth_rate = 1 # 1 for no smoothing, 0 for no changing
+parser = argparse.ArgumentParser()
+parser.add_argument("--config", type=str, default="./config.yaml")
+FLAGS = parser.parse_args()
+f = open(FLAGS.config)
+config = yaml.load(f, Loader=yaml.FullLoader)
+f.close()
+
+def get_trained_model(config, map_location="cpu"):
+    config = config
+    #backbone = MobileNetV3_Small if config["name"] == "mobile_net_v3_small" else MobileNetV3_Large
+    model_dict = {"mobile_net_v3_small":MobileNetV3_Small,
+                  "mobile_net_v3_large":MobileNetV3_Large,
+                  "xception":Xception,
+                  "resnet50":ResNet50,
+                  "resnet101":ResNet101,
+                  "resnet152":ResNet152,
+                  "ghostnet":GhostNet}
+    model = model_dict[config["model"]["name"]]
+    ckpt = torch.load(config["tester"]["resume_model"], map_location=map_location)
+    model.load_state_dict(ckpt["state_dict"])
+    model.eval()
+    return model
+
+label_table = config["tester"]["label"]
+if config["tester"].get("color"):
+    color_table = config["tester"]["color"]
+else:
+    color_table = [(0,0,100)]*len(label_table)
 
 detector = CV2FaceDetector('ckpt/haarcascade_frontalface_default.xml')
-model = get_trained_model(mbnet.MobileNetV3_Small(), "ckpt/checkpoint_best.pth.tar")
+model = get_trained_model(config, "cpu")
 smoother = LinearExponentialSmoothing(1)
 classifier = ExpressionClassifier(model, label_table, smoother)
 cam_solver = CameraSolver(detector, classifier)
@@ -22,7 +54,7 @@ while True:
     if rt:
         vizor.update(*rt)
         vizor.show()
-    cv2.waitKey(10)
+    vizor.pause(10)
 cam_solver.close()
 
 

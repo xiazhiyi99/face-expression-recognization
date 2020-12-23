@@ -11,12 +11,13 @@ tqdm
 
 数据集：affectnet、RAF-DB或其它
 
-## Demo
+## 本地摄像头测试
 
 ```shell
-cd face-expression-recognization
-python ./camera_test.py
+cd root/experiment/任意训练文件夹
+python ../../camera_testV2.py --config config.yaml
 ```
+为了方便测试，camera_testV2读入不同的config文件可进行不同模型的测试。需要确保config.yaml中“model.name”、“tester.resume_model”、“tester.label”的正确性。具体样例可以看已有的config文件。
 
 ## API
 
@@ -37,11 +38,41 @@ affectnet_table = ["Neutral", "Happy", "Sad", "Surprise", "Fear", "Disgust", "An
        
 ## 训练模块
 
-1. 准备数据集并修改 datasets.py
+首先需要准备数据集。建议自备数据集并自己写一个torch.data.Dataset类。也可以参考我们的数据集格式。如有需要下载请联系我们。
 
-2. 从https://github.com/xiaolai-sqlai/mobilenetv3 下载预训练模型mbn_small.pth.tar至[root/ckpt]
+我们的使用了预处理过的affectnet和rafdb。路径如下：
+```
+root/data
+├── AffectNet7
+└── RAF-DB
+```
 
-...
+RAF-DB数据集与官网直接下载的文件路径一致。  
+AffectNet数据集经过人脸识别器剪裁并重命名。名命格式为"train_xxxxx.jpg""val_xxxxx.jpg"。label存在labels.json，格式为"文件名:label_id"
+```
+AffectNet7
+├── labels.json
+└── output
+```
+
+开始训练，以下以建立一个mobilenet训练为例。
+
+```shell
+cd root/experiment
+mkdir mobilenet_train
+cd mobilenet_train
+cp ../其它训练文件夹/config.yaml ./config.yaml
+vim config.yaml
+```
+之后修改config.yaml中的参数。开始训练。
+```shell 
+python ../../train.py --config ./config.yaml
+``` 
+测试每个类别对应准确率和召回率，并生成混淆矩阵等。
+```shell
+python ../../eval.py --config config.yaml
+```
+
 
 ## 预测模块
 
