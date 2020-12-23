@@ -26,19 +26,19 @@ def get_trained_model(config, map_location="cpu"):
                   "resnet101":ResNet101,
                   "resnet152":ResNet152,
                   "ghostnet":GhostNet}
-    model = model_dict[config["model"]["name"]]
+    model = model_dict[config["model"]["name"]]()
     ckpt = torch.load(config["tester"]["resume_model"], map_location=map_location)
     model.load_state_dict(ckpt["state_dict"])
     model.eval()
     return model
 
-label_table = config["tester"]["label"]
+label_table = eval(config["tester"]["label"])
 if config["tester"].get("color"):
     color_table = config["tester"]["color"]
 else:
     color_table = [(0,0,100)]*len(label_table)
 
-detector = CV2FaceDetector('ckpt/haarcascade_frontalface_default.xml')
+detector = CV2FaceDetector('../../ckpt/haarcascade_frontalface_default.xml')
 model = get_trained_model(config, "cpu")
 smoother = LinearExponentialSmoothing(1)
 classifier = ExpressionClassifier(model, label_table, smoother)

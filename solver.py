@@ -295,6 +295,9 @@ class CV2Visualizer:
         if frame is not None:
             cv2.imshow("Easy Visualizer", frame)
 
+    def pause(self, t):
+        cv2.waitKey(t)
+
 class Visualizer:
     def __init__(self, label_table, window_size=20):
         self.fig= plt.figure(figsize=(80,60))
@@ -353,6 +356,9 @@ class Visualizer:
             #xs = [np.arange(0,len(self.vector))]
             self.ax3.plot(self.line,LineWidth=2)
             self.ax3.legend(self.label_table, loc=4)
+
+    def pause(self, t):
+        plt.pause(t/1000)
 
 if __name__=="__main__":
     detector = CV2FaceDetector()
