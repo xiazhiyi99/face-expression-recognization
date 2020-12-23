@@ -11,12 +11,13 @@ tqdm
 
 数据集：affectnet、RAF-DB或其它
 
-## Demo
+## 本地摄像头测试
 
 ```shell
-cd face-expression-recognization
-python ./camera_test.py
+cd root/experiment/任意训练文件夹
+python ../../camera_testV2.py --config config.yaml
 ```
+为了方便测试，camera_testV2读入不同的config文件可进行不同模型的测试。需要确保config.yaml中“model.name”、“tester.resume_model”、“tester.label”的正确性。具体样例可以看已有的config文件。
 
 ## API
 
