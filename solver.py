@@ -3,16 +3,24 @@ import model.mobilenetv3 as mbnet
 import torch
 import torchvision.transforms as trans
 import PIL.Image as Image
+import PIL.ImageDraw as ImageDraw
+import PIL.ImageFont as ImageFont
 import matplotlib.pyplot as plt
 import time
 import numpy as np
 import matplotlib
 import json
+import os
+import pathlib
+import platform
+
+ROOT_DIR = os.path.realpath(__file__)
 matplotlib.use("Qt5Agg")
 
 rafdb_table = {1:"Surprise", 2:"Fear", 3:"Disgust", 4:"Happiness", 5:"Sadness", 6:"Anger", 7:"Neutral"}
 affectnet_table = {0:"Happy", 1:"Sad", 2:"Surprise", 3:"Fear", 4:"Disgust", 5:"Anger"}
 affectnet7_table = {0:"Neutral", 1:"Happy", 2:"Sad", 3:"Surprise", 4:"Fear", 5:"Disgust", 6:"Anger"}
+affectnet7_cn_table = {0:"中性", 1:"开心", 2:"悲伤", 3:"惊讶", 4:"恐惧", 5:"厌恶", 6:"愤怒"}
 
 import threading
 
@@ -174,7 +182,7 @@ class ExpressionClassifier:
             prob = d["probability"]
             #print(res)
             cv2.rectangle(frame, d["box"], (0,0,255), 2)
-            cv2.putText(frame, "%s: %f"%(self.express_table[res], prob), (x,y-10),
+            cv2.putText(frame, "%s: %f"%(self.express_table[res], prob), (x,y-20),
                         cv2.FONT_HERSHEY_COMPLEX, 0.5, (0,0,155), 1)
 
 
@@ -278,14 +286,31 @@ class CV2Visualizer:
         else:
             color = (0,0,155)
         cv2.rectangle(frame, (x, y), (x+w, y+h), color, 2)
-        cv2.putText(frame, "%s: %f"%(self.label_table[res], prob), (x,y-10),
-                    cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 1)
+        #cv2.putText(frame, "%s: %f"%(self.label_table[res], prob), (x,y-10),
+        #            cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 1)
+        frame = self.cv2ImgAddText(frame, "%s: %f"%(self.label_table[res], prob), x, y-30, (155,0,0), 30)
 
         for idx, label in enumerate(self.label_table):
             vec_str = "%s:%.2f"%(label, vec[idx])
-            cv2.putText(frame, "%s"%vec_str, (20, 20+idx*20),
-                        cv2.FONT_HERSHEY_COMPLEX, 0.5, (0,0,155), 1)
+            #cv2.putText(frame, "%s"%vec_str, (20, 20+idx*20),
+            #            cv2.FONT_HERSHEY_COMPLEX, 0.5, (0,0,155), 1)
+            frame = self.cv2ImgAddText(frame, "%s"%vec_str, 20, 20+idx*30, (155,0,0), 30)
         return frame
+
+    def cv2ImgAddText(self, img, text, left, top, textColor=(155, 0, 0), textSize=20):
+        if (isinstance(img, np.ndarray)):
+            img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        draw = ImageDraw.Draw(img)
+        sys = platform.system()
+        if sys == "Windows":
+            font = "simhei.ttf"
+        elif sys == "Linux":
+            font = "NotoSansCJK-Bold.ttc"
+        fontStyle = ImageFont.truetype(
+            font, textSize, encoding="utf-8")
+        draw.text((left, top), text, textColor, font=fontStyle)
+        #img.show()
+        return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
     def show(self):
         if self.data:
