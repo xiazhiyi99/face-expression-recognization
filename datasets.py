@@ -194,16 +194,22 @@ class AffectNetDataset7RAFDBDataset7Balanced(datautils.Dataset):
         f.close()
 
         self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/RAF-DB/Image/original')
-        for x in self.datapath.glob('./%s*jpg'%split):
+        if split=="val":
+            rafsplit="test"
+        else:
+            rafsplit="train"
+        for x in self.datapath.glob('./%s*jpg'%rafsplit):
             self.datalist.append(x)
 
-
-
+        if split == "train":
+            num_restrict =  4396
+        else:
+            num_restrict = 555
         balanced_list = []
         cnt = np.zeros((8))
         random.shuffle(self.datalist)
         for d in self.datalist:
-            if cnt[self.labels[d.name]]<4395:
+            if cnt[self.labels[d.name]]<num_restrict:
                 cnt[self.labels[d.name]] += 1
                 balanced_list.append(d)
         print(cnt)

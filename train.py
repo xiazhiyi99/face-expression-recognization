@@ -143,6 +143,7 @@ class Trainer:
             pbar.set_description("idx:%d/%d loss:%f time:%d"%(i, len(pbar), loss.item(), timer.get()))
         return loss_tot / len(loader)
 
+    @torch.no_grad()
     def eval_one_epoch(self, model, loader):
         device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
         pbar = tqdm.tqdm(loader)
