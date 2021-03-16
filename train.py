@@ -113,7 +113,7 @@ class Trainer:
         best_acc = -1
         for epoch in range(self.MAX_EPOCH):
             print("----------- Epoch %d lr %.8f -----------"%(epoch, self.optimizer.state_dict()['param_groups'][0]['lr']))
-            avg_loss = self.train_one_epoch(self.model, self.optimizer, self.trainloader)
+            self.train_one_epoch(self.model, self.optimizer, self.trainloader)
             self.lr_scheduler.step()
             if epoch % self.EVAL_FREQUENCY == 0:
                 acc = self.eval_one_epoch(self.model, self.valloader)
@@ -130,18 +130,26 @@ class Trainer:
         device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
         pbar = tqdm.tqdm(loader)
         loss_tot = 0.
+        Ttot = 0
+        Ftot = 0
         model.train()
         model.to(device)
         timer = Timer()
         for i, (data, label) in enumerate(pbar):
             data, label = data.to(device), label.to(device)
             optimizer.zero_grad()
-            loss = model.get_loss(data, label)
+            loss, out = model.get_loss(data, label)
             loss.backward()
             optimizer.step()
+            T = (pred == label).sum()
+            F = (pred != label).sum()
+            Ttot += T.item()
+            Ftot += F.item()
+            _, pred = torch.max(out, 1)
             loss_tot += loss.item()
             pbar.set_description("idx:%d/%d loss:%f time:%d"%(i, len(pbar), loss.item(), timer.get()))
-        return loss_tot / len(loader)
+        print("Average Loss:%.3f Average Acc:%.3f"%(loss_tot / len(loader), Ttot / (Ttot + Ftot)))
+        return 
 
     @torch.no_grad()
     def eval_one_epoch(self, model, loader):
@@ -149,19 +157,22 @@ class Trainer:
         pbar = tqdm.tqdm(loader)
         Ttot = 0
         Ftot = 0
+        totloss = 0.
         model.eval()
         model.to(device)
-        pbar.set_description("evaluating...")
+        pbar.set_description("Evaluating...")
         for i, (data, label) in enumerate(pbar):
             data, label = data.to(device), label.to(device)
-            pred = model(data)
+            loss, pred = model.get_loss(data)
             _, pred = torch.max(pred, 1)
             T = (pred == label).sum()
             F = (pred != label).sum()
             Ttot += T.item()
             Ftot += F.item()
+            totloss += loss.item()
         avg_acc = Ttot / (Ttot + Ftot)
-        print("Accuracy:", avg_acc)
+        avg_loss = totloss / totloss
+        print("Eval Loss:%.3f Accuracy:%.3f"%(avg_loss, avg_acc))
         return avg_acc
     
     def save_model(self, epoch, path):

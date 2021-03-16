@@ -123,12 +123,12 @@ class Tester:
         for i in range(len(label)):
             print("%9s: Precision:%.2f Recall:%.2f F1:%.2f (%.1f%%, %d)"%(
                 label[i], TP[i]/(TP[i]+FP[i]), TP[i]/(TP[i]+FN[i]), 
-                2 * (1/(TP[i]/(TP[i]+FP[i])) + 1/(TP[i]/(TP[i]+FN[i]))),
+                2 / (1/(TP[i]/(TP[i]+FP[i])) + 1/(TP[i]/(TP[i]+FN[i]))),
                 CNT[i]/CNT.sum()*100, CNT[i],
             ))
         print("%9s: mPrecision:%.2f mRecall:%.2f macroF1:%.2f (%.1f%%, %d)"%(
                 "Average", (TP/(TP+FP)).mean(), (TP/(TP+FN)).mean(), 
-                2 * (1/(TP/(TP+FP)) + 1/(TP/(TP+FN))).mean(),
+                2 / (1/(TP/(TP+FP)) + 1/(TP/(TP+FN))).mean(),
                 100, CNT.sum(),
             ))
 
@@ -154,6 +154,12 @@ class Tester:
             ))
             f.write("%9s Accuracy:%.2f\n"%(
                 "Top1", TOT / NUM,
+            ))
+            f.write("%9s Accuracy:%.2f\n"%(
+                "Top2", TOT2 / NUM,
+            ))
+            f.write("%9s Accuracy:%.2f\n"%(
+                "Top3", TOT3 / NUM,
             ))
         if confusion_matrix:
             df_cm = pd.DataFrame(conf_mat,
