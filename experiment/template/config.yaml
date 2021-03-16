@@ -1,0 +1,44 @@
+random_seed: 444
+dataset:
+  name: 'affectnet7_rafdb_balanced'
+  batch_size: 64
+  workers: 8
+  file_path: '/data2/xzy/face-expression-recognization/data/AffectNet7/output'
+  train:
+    enable: True
+    random_flip: True
+    file_path: '/data2/xzy/face-expression-recognization/data/AffectNet7/output/train*'   
+  val:
+    enable: True
+    random_flip: False
+    file_file: '/data2/xzy/face-expression-recognization/data/AffectNet7/output/val*'  
+
+model:
+  name: 'ghostnet'
+  init: ''
+  use_focal_loss: False
+  focal_loss:
+    alpha: [.3, .01, 1.3, 10, 15, 30, 1.3]
+    gamma: 3
+
+scheduler:
+  lr_scheduler:
+    clip: 0.001
+    decay_rate: 0.2
+    decay_list: [8,15,20,23]
+
+optimizer:
+  type: 'adam'
+  lr: 0.001
+  weight_decay: 0
+
+trainer:
+  max_epoch: 25 
+  eval_frequency: 1 # evaluation interval (in epoch)
+  ckpt_dir: 'checkpoints/'
+
+tester:
+  resume_model: 'checkpoints/checkpoint_best.pth.tar'
+  confusion_matrix_path: './conf_mat.jpg'
+  label: '{0:"Neutral", 1:"Happy", 2:"Sad", 3:"Surprise", 4:"Fear", 5:"Disgust", 6:"Anger"}'
+
