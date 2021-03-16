@@ -8,11 +8,14 @@ from model.xception import Xception
 from model.ghostnet import GhostNet
 import argparse
 import yaml
+import os
+
+ROOT_DIR = os.path.realpath(__file__)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", type=str, default="./config.yaml")
 FLAGS = parser.parse_args()
-f = open(FLAGS.config)
+f = open(FLAGS.config, encoding='utf-8')
 config = yaml.load(f, Loader=yaml.FullLoader)
 f.close()
 
@@ -26,19 +29,19 @@ def get_trained_model(config, map_location="cpu"):
                   "resnet101":ResNet101,
                   "resnet152":ResNet152,
                   "ghostnet":GhostNet}
-    model = model_dict[config["model"]["name"]]
+    model = model_dict[config["model"]["name"]]()
     ckpt = torch.load(config["tester"]["resume_model"], map_location=map_location)
     model.load_state_dict(ckpt["state_dict"])
     model.eval()
     return model
 
-label_table = config["tester"]["label"]
+label_table = affectnet7_cn_table # 如果读取yaml里的中文label，需要改动其他py文件比较麻烦。所以这里直接读取固定的label，其它以后再改。 eval(config["tester"]["label"])
 if config["tester"].get("color"):
     color_table = config["tester"]["color"]
 else:
     color_table = [(0,0,100)]*len(label_table)
 
-detector = CV2FaceDetector('ckpt/haarcascade_frontalface_default.xml')
+detector = CV2FaceDetector('../../ckpt/haarcascade_frontalface_default.xml')
 model = get_trained_model(config, "cpu")
 smoother = LinearExponentialSmoothing(1)
 classifier = ExpressionClassifier(model, label_table, smoother)
