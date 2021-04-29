@@ -255,6 +255,7 @@ class AffectNetDataset7RAFDBDataset7Balanced(datautils.Dataset):
             img = transform(img)
         else:
             img = transform_test(img)
+<<<<<<< HEAD
         label = self.labels[self.datalist[idx].name]
         return img, label
     
@@ -307,6 +308,8 @@ class AffectNetDataset7RAFDBDataset7BalancedGrayscale(datautils.Dataset):
             img = transform_gray(img)
         else:
             img = transform_gray_test(img)
+=======
+>>>>>>> a3cc3b8e2f426d21527cb6481fce17f5c5bfd9a5
         label = self.labels[self.datalist[idx].name]
         return img, label
     

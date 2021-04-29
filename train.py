@@ -142,7 +142,10 @@ class Trainer:
             loss, out = model.get_loss(data, label)
             loss.backward()
             optimizer.step()
+<<<<<<< HEAD
             _, pred = torch.max(out, 1)
+=======
+>>>>>>> a3cc3b8e2f426d21527cb6481fce17f5c5bfd9a5
             T = (pred == label).sum()
             F = (pred != label).sum()
             Ttot += T.item()
@@ -165,7 +168,11 @@ class Trainer:
         pbar.set_description("Evaluating...")
         for i, (data, label) in enumerate(pbar):
             data, label = data.to(device), label.to(device)
+<<<<<<< HEAD
             loss, pred = model.get_loss(data, label)
+=======
+            loss, pred = model.get_loss(data)
+>>>>>>> a3cc3b8e2f426d21527cb6481fce17f5c5bfd9a5
             _, pred = torch.max(pred, 1)
             T = (pred == label).sum()
             F = (pred != label).sum()
