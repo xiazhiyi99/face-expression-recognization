@@ -9,13 +9,26 @@ import numpy as np
 from torch.utils.data.sampler import WeightedRandomSampler
 import random
 
-transform = trans.Compose([
+transform_ = trans.Compose([
     trans.RandomHorizontalFlip(0.5),
     #trans.RandomResizedCrop((224,224),scale=(0.98,1.0)),
     trans.Resize((224,224)),
     #trans.ColorJitter(brightness=1),
     #trans.ColorJitter(contrast=1),
     #trans.ColorJitter(saturation=1),
+    trans.ToTensor(),
+    trans.Normalize(mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225]),
+])
+
+transform = trans.Compose([
+    trans.RandomHorizontalFlip(0.5),
+    #trans.RandomResizedCrop((224,224),scale=(0.98,1.0)),
+    trans.Resize((224,224)),
+    trans.ColorJitter(brightness=0.3),
+    trans.ColorJitter(contrast=0.3),
+    trans.ColorJitter(saturation=0.1),
+    trans.RandomRotation(10, resample=False, expand=False, center=None),
     trans.ToTensor(),
     trans.Normalize(mean=[0.485, 0.456, 0.406],
                     std=[0.229, 0.224, 0.225]),
@@ -28,13 +41,33 @@ transform_test = trans.Compose([
                     std=[0.229, 0.224, 0.225]),
 ])
 
+transform_gray = trans.Compose([
+    trans.RandomHorizontalFlip(0.5),
+    #trans.RandomResizedCrop((224,224),scale=(0.98,1.0)),
+    trans.Resize((224,224)),
+    trans.ColorJitter(brightness=0.3),
+    trans.ColorJitter(contrast=0.3),
+    trans.ColorJitter(saturation=0.1),
+    trans.RandomRotation(10, resample=False, expand=False, center=None),
+    trans.Grayscale(),
+    trans.ToTensor(),
+    trans.Normalize(mean=[0.456],
+                    std=[0.226]),
+])
+transform_gray_test = trans.Compose([
+    trans.Resize((224,224)),
+    trans.Grayscale(),
+    trans.ToTensor(),
+    trans.Normalize(mean=[0.456],
+                    std=[0.226]),
+])
 class AffectNetDataset(datautils.Dataset):
     def __init__(self):
-        f = open('/data2/xzy/face-expression-recognization/data/AffectNet/output/labels.json')
+        f = open('/data/xzy/face-expression-recognization/data/AffectNet/output/labels.json')
         self.labels = json.load(f)
         f.close()
 
-        self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/AffectNet/output/data')
+        self.datapath = pathlib.Path('/data/xzy/face-expression-recognization/data/AffectNet/output/data')
         self.datalist = [x for x in self.datapath.glob('./*jpg')]
     
     def __getitem__(self, idx):
@@ -48,11 +81,11 @@ class AffectNetDataset(datautils.Dataset):
 
 class AffectNetDataset7(datautils.Dataset):
     def __init__(self, split="train"):
-        f = open('/data2/xzy/face-expression-recognization/data/AffectNet7/labels.json')
+        f = open('/data/xzy/face-expression-recognization/data/AffectNet7/labels.json')
         self.labels = json.load(f)
         f.close()
 
-        self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/AffectNet7/output/data')
+        self.datapath = pathlib.Path('/data/xzy/face-expression-recognization/data/AffectNet7/output/data')
         self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
     
     def __getitem__(self, idx):
@@ -66,11 +99,11 @@ class AffectNetDataset7(datautils.Dataset):
 
 class AffectNetDataset7Balanced(datautils.Dataset):
     def __init__(self, split="train"):
-        f = open('/data2/xzy/face-expression-recognization/data/AffectNet7/labels.json')
+        f = open('/data/xzy/face-expression-recognization/data/AffectNet7/labels.json')
         self.labels = json.load(f)
         f.close()
 
-        self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/AffectNet7/output/data')
+        self.datapath = pathlib.Path('/data/xzy/face-expression-recognization/data/AffectNet7/output/data')
         self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
 
         balanced_list = []
@@ -102,7 +135,7 @@ class AffectNetDataset5Balanced(datautils.Dataset):
     
     """
     def __init__(self, split="train"):
-        f = open('/data2/xzy/face-expression-recognization/data/AffectNet7/labels.json')
+        f = open('/data/xzy/face-expression-recognization/data/AffectNet7/labels.json')
         self.labels = json.load(f)
         f.close()
         for (k,v) in [(k,v) for k,v in self.labels.items()]:
@@ -111,7 +144,7 @@ class AffectNetDataset5Balanced(datautils.Dataset):
             elif v == 5 or v == 6:
                 self.labels[k] = 4
 
-        self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/AffectNet7/output/data')
+        self.datapath = pathlib.Path('/data/xzy/face-expression-recognization/data/AffectNet7/output/data')
         self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
 
         balanced_list = []
@@ -179,21 +212,21 @@ class RAFDBDataset(datautils.Dataset):
 class AffectNetDataset7RAFDBDataset7Balanced(datautils.Dataset):
     def __init__(self, split="train"):
         self.split = split
-        f = open('/data2/xzy/face-expression-recognization/data/AffectNet7/labels.json')
+        f = open('/data/xzy/face-expression-recognization/data/AffectNet7/labels.json')
         self.labels = json.load(f)
         f.close()
 
-        self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/AffectNet7/output/data')
+        self.datapath = pathlib.Path('/data/xzy/face-expression-recognization/data/AffectNet7/output/data')
         self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
         
         transfer = {1:3, 2:4, 3:5, 4:1, 5:2, 6:6, 7:0}
-        f = open('/data2/xzy/face-expression-recognization/data/RAF-DB/EmoLabel/list_patition_label.txt')
+        f = open('/data/xzy/face-expression-recognization/data/RAF-DB/EmoLabel/list_patition_label.txt')
         label = [line.strip('\n').split(' ') for line in f.readlines()]
         for [k,v] in label:
             self.labels[k] = transfer[int(v)]
         f.close()
 
-        self.datapath = pathlib.Path('/data2/xzy/face-expression-recognization/data/RAF-DB/Image/original')
+        self.datapath = pathlib.Path('/data/xzy/face-expression-recognization/data/RAF-DB/Image/original')
         if split=="val":
             rafsplit="test"
         else:
@@ -218,7 +251,62 @@ class AffectNetDataset7RAFDBDataset7Balanced(datautils.Dataset):
     
     def __getitem__(self, idx):
         img = PIL.Image.open(str(self.datalist[idx]))
-        img = transform(img)
+        if self.split=="train":
+            img = transform(img)
+        else:
+            img = transform_test(img)
+        label = self.labels[self.datalist[idx].name]
+        return img, label
+    
+    def __len__(self):
+        return len(self.datalist)
+
+class AffectNetDataset7RAFDBDataset7BalancedGrayscale(datautils.Dataset):
+    def __init__(self, split="train"):
+        self.split = split
+        f = open('/data/xzy/face-expression-recognization/data/AffectNet7/labels.json')
+        self.labels = json.load(f)
+        f.close()
+
+        self.datapath = pathlib.Path('/data/xzy/face-expression-recognization/data/AffectNet7/output/data')
+        self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
+        
+        transfer = {1:3, 2:4, 3:5, 4:1, 5:2, 6:6, 7:0}
+        f = open('/data/xzy/face-expression-recognization/data/RAF-DB/EmoLabel/list_patition_label.txt')
+        label = [line.strip('\n').split(' ') for line in f.readlines()]
+        for [k,v] in label:
+            self.labels[k] = transfer[int(v)]
+        f.close()
+
+        self.datapath = pathlib.Path('/data/xzy/face-expression-recognization/data/RAF-DB/Image/original')
+        if split=="val":
+            rafsplit="test"
+        else:
+            rafsplit="train"
+        for x in self.datapath.glob('./%s*jpg'%rafsplit):
+            self.datalist.append(x)
+
+        if split == "train":
+            num_restrict =  4396
+        else:
+            num_restrict = 555
+        balanced_list = []
+        cnt = np.zeros((8))
+        random.shuffle(self.datalist)
+        for d in self.datalist:
+            if cnt[self.labels[d.name]]<num_restrict:
+                cnt[self.labels[d.name]] += 1
+                balanced_list.append(d)
+        print(cnt)
+        self.datalist = balanced_list 
+
+    
+    def __getitem__(self, idx):
+        img = PIL.Image.open(str(self.datalist[idx]))
+        if self.split=="train":
+            img = transform_gray(img)
+        else:
+            img = transform_gray_test(img)
         label = self.labels[self.datalist[idx].name]
         return img, label
     
@@ -264,6 +352,12 @@ def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwa
     elif setname == "affectnet7_rafdb_balanced":
         trainset = AffectNetDataset7RAFDBDataset7Balanced('train')
         testset = AffectNetDataset7RAFDBDataset7Balanced('val')
+        trainloader = datautils.DataLoader(trainset,**kwargs) 
+        testloader = datautils.DataLoader(testset, **kwargs)
+        return trainloader, testloader
+    elif setname == "affectnet7_rafdb_balanced_gray":
+        trainset = AffectNetDataset7RAFDBDataset7BalancedGrayscale('train')
+        testset = AffectNetDataset7RAFDBDataset7BalancedGrayscale('val')
         trainloader = datautils.DataLoader(trainset,**kwargs) 
         testloader = datautils.DataLoader(testset, **kwargs)
         return trainloader, testloader

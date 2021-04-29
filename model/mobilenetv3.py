@@ -143,7 +143,7 @@ class MobileNetV3_Large(nn.Module):
     def get_loss(self, x, y):
         out =  self.forward(x)
         loss = self.criterion(out, y)
-        return loss
+        return loss,out
 
 
 
@@ -209,7 +209,7 @@ class MobileNetV3_Small(nn.Module):
     def get_loss(self, x, y):
         out =  self.forward(x)
         loss = self.criterion(out, y)
-        return loss
+        return loss, out
         
 
 

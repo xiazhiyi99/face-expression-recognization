@@ -105,7 +105,7 @@ class Xception(nn.Module):
     Xception optimized for the ImageNet dataset, as specified in
     https://arxiv.org/pdf/1610.02357.pdf
     """
-    def __init__(self, num_classes=1000, loss="cross_entropy"):
+    def __init__(self, num_classes=1000, in_channel=3, loss="cross_entropy"):
         """ Constructor
         Args:
             num_classes: number of classes
@@ -115,7 +115,7 @@ class Xception(nn.Module):
         
         self.num_classes = num_classes
 
-        self.conv1 = nn.Conv2d(3, 32, 3,2, 0, bias=False)
+        self.conv1 = nn.Conv2d(in_channel, 32, 3,2, 0, bias=False)
         self.bn1 = nn.BatchNorm2d(32)
         self.relu = nn.ReLU(inplace=True)
 
@@ -203,7 +203,7 @@ class Xception(nn.Module):
     def get_loss(self, x, y):
         out =  self.forward(x)
         loss = self.criterion(out, y)
-        return loss
+        return loss, out
 
 
 
