@@ -8,6 +8,7 @@ import PIL
 import numpy as np
 from torch.utils.data.sampler import WeightedRandomSampler
 import random
+import pickle
 
 transform_ = trans.Compose([
     trans.RandomHorizontalFlip(0.5),
@@ -32,6 +33,33 @@ transform = trans.Compose([
     trans.ToTensor(),
     trans.Normalize(mean=[0.485, 0.456, 0.406],
                     std=[0.229, 0.224, 0.225]),
+])
+
+transform_oulu = trans.Compose([
+    trans.RandomHorizontalFlip(0.5),
+    trans.RandomResizedCrop((224,224),scale=(0.75,1.0),ratio=(0.75,1.33),interpolation=2),
+    #trans.Resize((224,224)),
+    trans.ColorJitter(brightness=0.3),
+    trans.ColorJitter(contrast=0.3),
+    trans.ColorJitter(saturation=0.1),
+    trans.RandomRotation(20, resample=False, expand=False, center=None),
+    trans.Grayscale(),
+    trans.ToTensor(),
+    trans.Normalize(mean=[0.456],
+                    std=[0.226]),
+])
+transform_oulu_test = trans.Compose([
+    #trans.RandomHorizontalFlip(0.5),
+    #trans.RandomResizedCrop((224,224),scale=(0.75,1.0),ratio=(0.75,1.33),interpolation=2),
+    trans.Resize((224,224)),
+    #trans.ColorJitter(brightness=0.3),
+    #trans.ColorJitter(contrast=0.3),
+    #trans.ColorJitter(saturation=0.1),
+    #trans.RandomRotation(20, resample=False, expand=False, center=None),
+    trans.Grayscale(),
+    trans.ToTensor(),
+    trans.Normalize(mean=[0.456],
+                    std=[0.226]),
 ])
 
 transform_test = trans.Compose([
@@ -255,7 +283,6 @@ class AffectNetDataset7RAFDBDataset7Balanced(datautils.Dataset):
             img = transform(img)
         else:
             img = transform_test(img)
-<<<<<<< HEAD
         label = self.labels[self.datalist[idx].name]
         return img, label
     
@@ -308,9 +335,56 @@ class AffectNetDataset7RAFDBDataset7BalancedGrayscale(datautils.Dataset):
             img = transform_gray(img)
         else:
             img = transform_gray_test(img)
-=======
->>>>>>> a3cc3b8e2f426d21527cb6481fce17f5c5bfd9a5
         label = self.labels[self.datalist[idx].name]
+        return img, label
+    
+    def __len__(self):
+        return len(self.datalist)
+
+class AffectNetDataset7(datautils.Dataset):
+    def __init__(self, split="train"):
+        f = open('/data/xzy/face-expression-recognization/data/AffectNet7/labels.json')
+        self.labels = json.load(f)
+        f.close()
+
+        self.datapath = pathlib.Path('/data/xzy/face-expression-recognization/data/AffectNet7/output/data')
+        self.datalist = [x for x in self.datapath.glob('./%s*jpg'%split)]
+    
+    def __getitem__(self, idx):
+        img = PIL.Image.open(str(self.datalist[idx]))
+        img = transform(img)
+        label = self.labels[self.datalist[idx].name]
+        return img, label
+    
+    def __len__(self):
+        return len(self.datalist)
+
+class Oulu7(datautils.Dataset):
+    def __init__(self, split="train"):
+        f = open('/data/xzy/data/face-emotion/Oulu/Oulu7label.pickle', "rb")
+        self.labels = pickle.load(f)
+        self.bbox = pickle.load(f)
+        f.close()
+
+        self.datapath = pathlib.Path('/data/xzy/data/face-emotion/Oulu/Oulu7')
+        self.datalist = []
+        if split == "train":
+            for i in range(1, 71):
+                self.datalist += [x for x in self.datapath.glob('./P%03d*jpeg'%i)]
+            self.trans = transform_oulu
+        else:
+            for i in range(71, 81):
+                self.datalist += [x for x in self.datapath.glob('./P%03d*jpeg'%i)]
+            self.trans = transform_gray_test
+
+    
+    def __getitem__(self, idx):
+        img = PIL.Image.open(str(self.datalist[idx]))#.convert("RGB")
+        x,y,w,h = self.bbox[self.datalist[idx].name][0]
+        label = self.labels[self.datalist[idx].name]
+        #print(img.size, img.crop((x,y,x+w,y+h)).size)
+        #assert(False)
+        img = self.trans(img)
         return img, label
     
     def __len__(self):
@@ -318,7 +392,8 @@ class AffectNetDataset7RAFDBDataset7BalancedGrayscale(datautils.Dataset):
 
 def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwargs):
     dataset_book = {"affectnet":AffectNetDataset, "raf-db":RAFDBDataset,
-                    "affectnet7":AffectNetDataset7, "affectnet7balanced":AffectNetDataset7Balanced}
+                    "affectnet7":AffectNetDataset7, "affectnet7balanced":AffectNetDataset7Balanced,
+                    "oulu":Oulu7}
     if setname == "raf-db":
         trainset = RAFDBDataset('train')
         trainsampler = trainset.get_sampler() if use_sampler else None
@@ -364,6 +439,15 @@ def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwa
         trainloader = datautils.DataLoader(trainset,**kwargs) 
         testloader = datautils.DataLoader(testset, **kwargs)
         return trainloader, testloader
+    elif setname == "oulu":
+        trainset = Oulu7('train')
+        testset = Oulu7('val')
+        trainloader = datautils.DataLoader(trainset,**kwargs) 
+        testloader = datautils.DataLoader(testset, **kwargs)
+        return trainloader, testloader
+    else:
+        raise Exception("No Such Dataset!")
+
 
 
 if __name__=="__main__":

@@ -36,9 +36,11 @@ def main():
 
 
 def get_model(config):
-    model_name = config["model"]["name"]
-    config = config["tester"]
-    path = config["resume_model"]
+    model_config = config["model"]
+    tester_config = config["tester"]
+    model_name = model_config["name"]
+    #config = config["tester"]
+    path = tester_config["resume_model"]
     print("Evaluating", path)
     ckpt = torch.load(path, map_location='cpu')
     model_dict = {"mobile_net_v3_small":MobileNetV3_Small,
@@ -48,7 +50,9 @@ def get_model(config):
                 "resnet101":ResNet101,
                 "resnet152":ResNet152,
                 "ghostnet":GhostNet}
-    model = model_dict[model_name]()
+    
+    in_channel = 3 if "in_channel" not in model_config else model_config["in_channel"]
+    model = model_dict[model_name]()  if in_channel==3 else model_dict[model_name](in_channel=in_channel)
     model.load_state_dict(ckpt["state_dict"])
     return model
 

@@ -35,8 +35,18 @@ def main():
     # FOCAL_LOSS = True
     # load model
     model = get_pretrained_model(config)
+    model = get_pretrained_model(config)
 
-    optimizer = torch.optim.Adam(model.parameters(), config["optimizer"]["lr"])
+    # optimizer = torch.optim.Adam(model.parameters(), config["optimizer"]["lr"])
+    if config["optimizer"]["weight_decay"]:
+        p_decay, p_nodecay = split_parameters(model)
+        optimizer = torch.optim.Adam([
+            {"params": p_decay, "weight_decay":config["optimizer"]["weight_decay"]},
+            {"params": p_nodecay}],
+            lr=config["optimizer"]["lr"])
+    else:
+        optimizer = torch.optim.Adam(model.parameters(), config["optimizer"]["lr"])
+        
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
                     config["scheduler"]["lr_scheduler"]["decay_list"],
                     config["scheduler"]["lr_scheduler"]["decay_rate"])
@@ -142,10 +152,7 @@ class Trainer:
             loss, out = model.get_loss(data, label)
             loss.backward()
             optimizer.step()
-<<<<<<< HEAD
             _, pred = torch.max(out, 1)
-=======
->>>>>>> a3cc3b8e2f426d21527cb6481fce17f5c5bfd9a5
             T = (pred == label).sum()
             F = (pred != label).sum()
             Ttot += T.item()
@@ -168,11 +175,7 @@ class Trainer:
         pbar.set_description("Evaluating...")
         for i, (data, label) in enumerate(pbar):
             data, label = data.to(device), label.to(device)
-<<<<<<< HEAD
             loss, pred = model.get_loss(data, label)
-=======
-            loss, pred = model.get_loss(data)
->>>>>>> a3cc3b8e2f426d21527cb6481fce17f5c5bfd9a5
             _, pred = torch.max(pred, 1)
             T = (pred == label).sum()
             F = (pred != label).sum()
