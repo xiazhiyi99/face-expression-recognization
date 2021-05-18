@@ -15,7 +15,7 @@ import pathlib
 import platform
 
 ROOT_DIR = os.path.realpath(__file__)
-matplotlib.use("Qt5Agg")
+#matplotlib.use("Qt5Agg")
 
 rafdb_table = {1:"Surprise", 2:"Fear", 3:"Disgust", 4:"Happiness", 5:"Sadness", 6:"Anger", 7:"Neutral"}
 affectnet_table = {0:"Happy", 1:"Sad", 2:"Surprise", 3:"Fear", 4:"Disgust", 5:"Anger"}
@@ -128,19 +128,22 @@ class CV2FaceDetector:
         return faces
 
 class ExpressionClassifier:
-    def __init__(self, classifier, express_table, smoother=None):
+    def __init__(self, classifier, express_table, smoother=None, preprocesser=None, device=None):
         self.classifier = classifier
-        self.resizer = trans.Compose([
-            trans.Resize((224)),
-            trans.ToTensor(),
-            trans.Normalize(mean=[0.485, 0.456, 0.406],
-                            std=[0.229, 0.224, 0.225]),
-        ])
+        if preprocesser is None:
+            self.resizer = trans.Compose([
+                trans.Resize((224)),
+                trans.ToTensor(),
+                trans.Normalize(mean=[0.485, 0.456, 0.406],
+                                std=[0.229, 0.224, 0.225]),
+            ])
+        else:
+            self.resizer = preprocesser
         self.output_range = express_table.keys()
         self.express_table = [v for k,v in express_table.items()]
         self.prev_exp = []
         self.smoother = smoother
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") if device is None else device
 
     def to(self, device):
         self.device = device
@@ -319,6 +322,13 @@ class CV2Visualizer:
             frame = self.frame
         if frame is not None:
             cv2.imshow("Easy Visualizer", frame)
+
+    def draw(self):
+        if self.data:
+            frame = self.draw_frame(self.data, self.frame)
+        else:
+            frame = self.frame
+        return frame
 
     def pause(self, t):
         cv2.waitKey(t)
