@@ -390,10 +390,49 @@ class Oulu7(datautils.Dataset):
     def __len__(self):
         return len(self.datalist)
 
+class Oulu7Bus(datautils.Dataset):
+    def __init__(self, split="train"):
+        f = open('/data/xzy/data/face-emotion/Oulu/Oulu7label.pickle', "rb")
+        self.labels = pickle.load(f)
+        self.bbox = pickle.load(f)
+        f.close()
+
+        f = open('/data/xzy/data/bus/buslabel.pickle', "rb")
+        self.labels.update(pickle.load(f))
+        self.bbox.update(pickle.load(f))
+        f.close()
+
+        self.oulu_datapath = pathlib.Path('/data/xzy/data/face-emotion/Oulu/Oulu7')
+        self.bus_datapath = pathlib.Path('/data/xzy/data/bus/frames')
+        self.datalist = []
+        if split == "train":
+            for i in range(1, 71):
+                self.datalist += [x for x in self.oulu_datapath.glob('./P%03d*jpeg'%i)]
+            self.datalist += [x for x in self.bus_datapath.glob('./*jpeg')]
+            self.trans = transform_oulu
+        else:
+            for i in range(71, 81):
+                self.datalist += [x for x in self.oulu_datapath.glob('./P%03d*jpeg'%i)]
+            self.trans = transform_gray_test
+
+    
+    def __getitem__(self, idx):
+        img = PIL.Image.open(str(self.datalist[idx]))#.convert("RGB")
+        #print(self.bbox[self.datalist[idx].name])
+        x,y,w,h = self.bbox[self.datalist[idx].name][0]
+        label = self.labels[self.datalist[idx].name]
+        #print(img.size, img.crop((x,y,x+w,y+h)).size)
+        #assert(False)
+        img = self.trans(img)
+        return img, label
+    
+    def __len__(self):
+        return len(self.datalist)
+
 def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwargs):
     dataset_book = {"affectnet":AffectNetDataset, "raf-db":RAFDBDataset,
                     "affectnet7":AffectNetDataset7, "affectnet7balanced":AffectNetDataset7Balanced,
-                    "oulu":Oulu7}
+                    "oulu":Oulu7, "oulu+bus":Oulu7Bus}
     if setname == "raf-db":
         trainset = RAFDBDataset('train')
         trainsampler = trainset.get_sampler() if use_sampler else None
@@ -442,6 +481,12 @@ def get_loader(setname="affectnet", traindata_ratio=0.5, use_sampler=True, **kwa
     elif setname == "oulu":
         trainset = Oulu7('train')
         testset = Oulu7('val')
+        trainloader = datautils.DataLoader(trainset,**kwargs) 
+        testloader = datautils.DataLoader(testset, **kwargs)
+        return trainloader, testloader
+    elif setname == "oulu+bus":
+        trainset = Oulu7Bus('train')
+        testset = Oulu7Bus('val')
         trainloader = datautils.DataLoader(trainset,**kwargs) 
         testloader = datautils.DataLoader(testset, **kwargs)
         return trainloader, testloader

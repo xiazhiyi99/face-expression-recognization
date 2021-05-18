@@ -48,7 +48,7 @@ def get_trained_model(config, map_location="cpu"):
                   "ghostnet":GhostNet}
     model = model_dict[config["model"]["name"]](in_channel=1)
     #ckpt = torch.load("./experiment/xception_aff7rafdb_balanced_transform/" + config["tester"]["resume_model"], map_location=map_location)
-    ckpt = torch.load("/data/xzy/face-expression-recognization/experiment/xception_oulu7/checkpoints/checkpoint_best.pth.tar")
+    ckpt = torch.load("/data/xzy/face-expression-recognization/experiment/xception_oulu7_bus/checkpoints/checkpoint_best.pth.tar")
     model.load_state_dict(ckpt["state_dict"])
     model.eval()
     return model
@@ -153,7 +153,7 @@ classifier = ExpressionClassifier(model, label_table, smoother, transform_oulu_t
 cam_solver = CameraSolver(detector, classifier)
 vizor = CV2Visualizer(label_table=classifier.express_table, color_table=color_table)
 
-cam_id = "/data/xzy/data/bus/2/R20210511-150927NMD00P0F.mp4"
+cam_id = "/data/xzy/data/bus/1/R20210429-084424NMD00P0F.mp4"
 # cam_id = 0 # 本机摄像头
 # cam_id = 'rtsp://admin:bwton123@192.168.24.64:554/Streaming/Channels/101' # RTSP视频流
 
@@ -161,7 +161,7 @@ cam_solver.start(cam_id)
 print(cam_solver.cam.get(cv2.CAP_PROP_FRAME_WIDTH), cam_solver.cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-out = cv2.VideoWriter('testwrite2.mp4', fourcc, 20.0, (704,576),True)
+out = cv2.VideoWriter('testwrite-2.mp4', fourcc, 20.0, (704,576),True)
 
 cnt = 0
 while cam_solver.isOpened():

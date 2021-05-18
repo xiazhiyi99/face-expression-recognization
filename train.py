@@ -2,6 +2,7 @@ import torch
 import cv2
 import pathlib
 import numpy as np
+from train_utils import split_parameters
 from model.mobilenetv3 import MobileNetV3_Small, MobileNetV3_Large
 from model.resnet import ResNet50, ResNet101, ResNet152
 from model.xception import Xception
@@ -111,6 +112,7 @@ class Trainer:
         config = config["trainer"]
         self.MAX_EPOCH = config["max_epoch"]
         self.EVAL_FREQUENCY = config["eval_frequency"]
+        self.SAVE_FREQUENCY = config["save_frequency"] if "save_frequency" in config else None
         self.ckpt_dir = pathlib.Path(config["ckpt_dir"])
         if not self.ckpt_dir.exists():
             self.ckpt_dir.mkdir()
@@ -135,6 +137,8 @@ class Trainer:
                     #model_path = 'ckpt/%s_mobilenet_small%s.pth.tar'%(DATASET, "_floss_alpha2" if FOCAL_LOSS else "")
                     #print("# Best acc:%f, saving model %s"%(acc, model_path))
                     #torch.save(state, model_path)
+            if self.SAVE_FREQUENCY and epoch % self.SAVE_FREQUENCY==0:
+                self.save_model(epoch, "checkpoints/checkpoint_epoch%d.pth.tar"%epoch)
         print("Complete. Best acc:", best_acc)
     
     def train_one_epoch(self, model, optimizer, loader):
@@ -183,7 +187,7 @@ class Trainer:
             Ftot += F.item()
             totloss += loss.item()
         avg_acc = Ttot / (Ttot + Ftot)
-        avg_loss = totloss / totloss
+        avg_loss = totloss
         print("Eval Loss:%.3f Accuracy:%.3f"%(avg_loss, avg_acc))
         return avg_acc
     
